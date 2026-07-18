@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Dashboard Enseignant - EducInspect</title>
+		<link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
+		<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+		<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
+		<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+	</head>
+	<body data-required-role="enseignant">
+		<div class="app-shell">
+			<aside class="sidebar">
+				<a class="brand" href="../index.html"><img src="../assets/img/logo.png" alt="EducInspect"><span>EducInspect</span></a>
+				<div class="profile"><div class="avatar">EN</div><div><strong data-user-name>Enseignant</strong><p data-user-role>Suivi pedagogique</p></div></div>
+				<nav class="side-nav">
+					<a class="active" href="enseignant.html"><span class="ti-blackboard"></span>Enseignant</a>
+					<a href="#rapports-enseignant"><span class="ti-files"></span>Rapports</a>
+					<a href="#"><span class="ti-book"></span>Observations</a>
+					<a href="#"><span class="ti-check-box"></span>Actions pedagogiques</a>
+					<a href="deconnexion.html"><span class="ti-power-off"></span>Deconnexion</a>
+				</nav>
+				<p class="copyright">&copy; 2026 EducInspect</p>
+			</aside>
+			<main class="main">
+				<header class="topbar">
+					<button class="menu-btn" type="button"><span class="ti-menu"></span></button>
+					<div class="search"><span class="ti-search"></span><input type="search" placeholder="Rechercher une observation..."></div>
+					<div class="top-actions"><button class="icon-btn" type="button"><span class="ti-bell"></span><em>1</em></button><div class="user-menu"><span class="ti-user"></span> <span data-user-role>Enseignant</span></div></div>
+				</header>
+				<section class="dashboard-head">
+					<div><p class="eyebrow">Espace enseignant</p><h1>Mes observations pedagogiques</h1><p>L'enseignant consulte les observations qui le concernent et suit ses actions pedagogiques.</p></div>
+					<div class="period"><span class="ti-book"></span> Classe CP1</div>
+				</section>
+				<section class="stats-grid">
+					<div class="stat-card blue"><span class="ti-files"></span><div><p>Rapports consultables</p><strong>3</strong><small>Cette annee</small></div></div>
+					<div class="stat-card green"><span class="ti-check"></span><div><p>Actions terminees</p><strong>2</strong><small>Suivi classe</small></div></div>
+					<div class="stat-card teal"><span class="ti-alert"></span><div><p>Actions attendues</p><strong>3</strong><small>A realiser</small></div></div>
+					<div class="stat-card yellow"><span class="ti-star"></span><div><p>Derniere appreciation</p><strong>Bien</strong><small>Inspection</small></div></div>
+					<div class="stat-card purple"><span class="ti-calendar"></span><div><p>Prochain suivi</p><strong>20</strong><small>Aout 2026</small></div></div>
+				</section>
+				<section class="content-grid"></section>
+				<section class="workspace-grid">
+					<div class="panel table-panel" id="rapports-enseignant">
+						<div class="panel-head"><h2>Actions pedagogiques</h2><a href="#rapports-enseignant">Rapport</a></div>
+						<table class="data-table">
+							<thead><tr><th>Action</th><th>Objectif</th><th>Echeance</th><th>Statut</th></tr></thead>
+							<tbody>
+								<tr><td><strong>Preparer les fiches de sequence</strong><span>Lecture et mathematiques</span></td><td>Meilleure preparation</td><td>30/06/2026</td><td><mark class="badge warning">En cours</mark></td></tr>
+								<tr><td><strong>Suivi individualise des eleves</strong><span>Carnet de progression</span></td><td>Identifier les difficultes</td><td>15/07/2026</td><td><mark class="badge info">A faire</mark></td></tr>
+								<tr><td><strong>Gestion du cahier journal</strong><span>Mise a jour hebdomadaire</span></td><td>Traçabilite</td><td>01/08/2026</td><td><mark class="badge success">Termine</mark></td></tr>
+							</tbody>
+						</table>
+					</div>
+					<div class="panel score-summary">
+						<h2>Conseils de l'inspection</h2>
+						<ul>
+							<li><span class="ti-check"></span>Renforcer la participation active des eleves pendant les exercices.</li>
+							<li><span class="ti-check"></span>Utiliser davantage les supports visuels pour les notions difficiles.</li>
+							<li><span class="ti-check"></span>Documenter les progres des eleves dans le carnet de suivi.</li>
+						</ul>
+					</div>
+				</section>
+			</main>
+		</div>
+		<script src="../assets/js/api-einspect.js"></script>
+		<script src="../assets/js/role-guard-einspect.js"></script>
+		<script src="../assets/js/dashboard-einspect.js"></script>
+		<script src="../assets/js/role-dynamic-einspect.js"></script>
+	</body>
+</html>

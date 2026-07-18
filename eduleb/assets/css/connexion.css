@@ -1,0 +1,217 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.login-wrapper {
+    display: flex;
+    width: 1180px;      /* légèrement plus large */
+    max-width: 100%;
+    min-height: 670px;  /* un peu plus long */
+    background: #fff;
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+}
+
+.left-panel {
+    width: 45%;
+    background: linear-gradient(to bottom, #eef7fb, #ffffff);
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.left-content {
+    text-align: left;
+}
+
+.logo {
+    width: 90px;
+    margin-bottom: 20px;
+}
+
+.left-content h1 {
+    font-size: 32px;
+    line-height: 1.2;
+    color: #0b2f6b;
+    margin-bottom: 20px;
+}
+
+.left-content h1 span {
+    color: #00a6a6;
+}
+
+.left-content p {
+    color: #4f5b66;
+    font-size: 17px;      /* légèrement plus grand */
+    line-height: 1.8;
+    max-width: 360px;
+    margin-top: -35px;    /* remonte le texte */
+}
+
+.illustration {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.illustration img {
+    width: 100%;
+    max-width: 340px;
+}
+
+.right-panel {
+    width: 55%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 50px;
+}
+
+.form-box {
+    width: 100%;
+    max-width: 420px;
+     width: 100%;
+    max-width: 420px;
+    transform: translateY(-50px);
+}
+
+/* Seulement le titre */
+.form-box h2 {
+    font-size: 42px;
+    font-weight: 700;
+    color: #0b2f6b;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* Seulement le texte sous le titre */
+.subtitle {
+    color: #666;
+    font-size: 19px;
+    line-height: 1.6;
+    margin-bottom: 35px;
+    text-align: center;
+}
+
+/* Les champs restent alignés à gauche */
+.input-group {
+    text-align: left;
+}
+
+
+
+
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 14px 15px;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.input-group input:focus {
+    border-color: #00a6a6;
+}
+
+.options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    font-size: 14px;
+}
+
+.options a {
+    color: #0b2f6b;
+    text-decoration: none;
+}
+
+.btn-login {
+    width: 100%;
+    background: #00a6a6;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-login:hover {
+    background: #008b8b;
+}
+
+@media (max-width: 900px) {
+    .login-wrapper {
+        flex-direction: column;
+    }
+
+    .left-panel,
+    .right-panel {
+        width: 100%;
+    }
+
+    .left-panel {
+        align-items: center;
+        text-align: center;
+    }
+
+    .left-content p {
+        max-width: 100%;
+    }
+}
+.brand {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.logo {
+    width: 65px;
+    height: 65px;
+    object-fit: contain;
+    margin-top: 5px;
+}
+
+.brand h1 {
+    margin: 0;
+    font-size: 28px;      /* Avant : 55px */
+    line-height: 1.15;
+    font-weight: 800;
+    color: #0A3B8E;
+    text-transform: uppercase;
+}
+
+.brand h1 span {
+    color: #00AEB3;
+}

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Fiches d'inspection - EducInspect</title>
+		<link rel="icon" type="image/x-icon" href="assets/img/favicon.png">
+		<link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+		<link href="assets/fonts/themify-icons.css" rel="stylesheet">
+		<link href="assets/css/dashboard-einspect.css" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+	</head>
+	<body>
+		<div class="app-shell">
+			<aside class="sidebar">
+				<a class="brand" href="index.html"><img src="assets/img/logo.png" alt="EducInspect"><span>EducInspect</span></a>
+				<div class="profile"><div class="avatar">KM</div><div><strong>Koffi A. Mensah</strong><p>Inspecteur pedagogique</p></div></div>
+				<nav class="side-nav">
+					<a href="dashboard.html"><span class="ti-dashboard"></span>Tableau de bord</a>
+					<a href="missions.html"><span class="ti-clipboard"></span>Missions d'inspection</a>
+					<a href="calendrier.html"><span class="ti-calendar"></span>Calendrier</a>
+					<a class="active" href="fiches.html"><span class="ti-write"></span>Fiches d'inspection</a>
+					<a href="rapports.html"><span class="ti-files"></span>Rapports</a>
+					<a href="logout.html"><span class="ti-power-off"></span>Deconnexion</a>
+				</nav>
+				<p class="copyright">&copy; 2026 EducInspect</p>
+			</aside>
+			<main class="main">
+				<header class="topbar"><button class="menu-btn" type="button"><span class="ti-menu"></span></button><div class="search"><span class="ti-search"></span><input type="search" placeholder="Rechercher une fiche..."></div><div class="top-actions"><button class="icon-btn" type="button"><span class="ti-bell"></span><em>5</em></button><div class="user-menu"><span class="ti-user"></span> Inspecteur</div></div></header>
+				<section class="dashboard-head">
+					<div><p class="eyebrow">Evaluation</p><h1>Fiche d'inspection numerique</h1><p>Remplissage rapide avec calcul automatique du score global.</p></div>
+					<div class="period"><span class="ti-bar-chart"></span> Score : <strong data-score-output>0%</strong></div>
+				</section>
+				<section class="workspace-grid">
+					<div class="panel form-panel wide">
+						<form data-inspection-form class="app-form">
+							<label>Ecole inspectee<input type="text" value="Ecole Primaire Houeyiho 1"></label>
+							<label>Commune<input type="text" value="Abomey"></label>
+							<label>Preparation des cours<input type="range" min="0" max="100" value="80"></label>
+							<label>Pedagogie et methodes<input type="range" min="0" max="100" value="75"></label>
+							<label>Gestion de classe<input type="range" min="0" max="100" value="70"></label>
+							<label>Documents scolaires<input type="range" min="0" max="100" value="78"></label>
+							<label>Observations<textarea rows="4">L'ecole presente une organisation globale satisfaisante. Les enseignants sont invites a renforcer le suivi individualise des eleves.</textarea></label>
+							<button class="primary-action" type="button">Enregistrer la fiche</button>
+						</form>
+					</div>
+					<div class="panel score-summary">
+						<h2>Resultat automatique</h2>
+						<div class="big-score" data-score-output>0%</div>
+						<p data-score-appreciation>Bien</p>
+						<ul data-recommendations></ul>
+					</div>
+				</section>
+			</main>
+		</div>
+		<script src="assets/js/dashboard-einspect.js"></script>
+	</body>
+</html>

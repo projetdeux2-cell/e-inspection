@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Redirection - EducInspect</title>
+	</head>
+	<body>
+		<script>
+			const dashboards = {
+				admin: "dashboards/admin.html",
+				directeur_departemental: "dashboards/direction.html",
+				inspecteur: "dashboards/inspecteur.html",
+				directeur_ecole: "dashboards/ecole.html",
+				enseignant: "dashboards/enseignant.html"
+			};
+
+			function getUser() {
+				try {
+					return JSON.parse(localStorage.getItem("educinspect_user") || "null");
+				} catch (error) {
+					return null;
+				}
+			}
+
+			const token = localStorage.getItem("educinspect_token");
+			const user = getUser();
+			const roles = (user?.roles || []).map((role) => role.name);
+			const role = Object.keys(dashboards).find((item) => roles.includes(item));
+
+			window.location.replace(token && role ? dashboards[role] : "login.html");
+		</script>
+		<p>Redirection vers votre espace...</p>
+	</body>
+</html>

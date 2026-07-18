@@ -1,0 +1,243 @@
+:root {
+  --ei-navy: #06254a;
+  --ei-blue: #0866e8;
+  --ei-green: #25c462;
+  --ei-yellow: #f8b72b;
+  --ei-purple: #8157f5;
+  --ei-muted: #657083;
+  --ei-line: #e6edf6;
+  --ei-page: #f7faff;
+}
+
+body {
+  background: var(--ei-page);
+  color: #0c1834;
+}
+
+.preloaders {
+  display: none !important;
+}
+
+.site-navigation {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-bottom: 1px solid var(--ei-line);
+  box-shadow: 0 10px 28px rgba(6, 37, 74, 0.06);
+}
+
+#main-menu ul li a,
+.mobile_menu li a {
+  color: #14213d;
+  font-weight: 700;
+}
+
+#main-menu ul li a:hover {
+  color: var(--ei-blue);
+}
+
+.btn_one {
+  background: var(--ei-blue) !important;
+  border-color: var(--ei-blue) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 14px 28px rgba(8, 102, 232, 0.2);
+}
+
+.feature-hero {
+  padding: 92px 0 70px;
+  background:
+    radial-gradient(circle at 80% 18%, rgba(37, 196, 98, 0.13), transparent 24%),
+    linear-gradient(100deg, #f7faff, #eef7ff);
+}
+
+.eyebrow {
+  margin: 0 0 14px;
+  color: var(--ei-blue);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.feature-hero h1 {
+  margin: 0;
+  color: var(--ei-navy);
+  font-size: clamp(42px, 5vw, 64px);
+  line-height: 1.02;
+}
+
+.feature-hero p {
+  max-width: 610px;
+  margin-top: 22px;
+  color: #34415a;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.procedure-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 24px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid var(--ei-line);
+  box-shadow: 0 24px 70px rgba(6, 37, 74, 0.12);
+}
+
+.procedure-card div {
+  min-height: 130px;
+  padding: 22px;
+  border-radius: 16px;
+  background: var(--ei-page);
+}
+
+.procedure-card strong {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ei-blue);
+  color: #ffffff;
+}
+
+.procedure-card span {
+  display: block;
+  margin-top: 16px;
+  color: var(--ei-navy);
+  font-weight: 900;
+}
+
+.modules-section,
+.workflow-section {
+  padding: 78px 0;
+  background: #ffffff;
+}
+
+.section-title h2 {
+  color: var(--ei-navy) !important;
+}
+
+.section-title p {
+  color: var(--ei-muted) !important;
+}
+
+.module-card {
+  min-height: 270px;
+  padding: 30px;
+  margin-bottom: 24px;
+  border: 1px solid var(--ei-line);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(6, 37, 74, 0.05);
+}
+
+.module-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 18px;
+  color: #ffffff;
+  font-size: 26px;
+}
+
+.blue {
+  background: var(--ei-blue);
+}
+
+.green {
+  background: var(--ei-green);
+}
+
+.purple {
+  background: var(--ei-purple);
+}
+
+.orange {
+  background: #ff7a45;
+}
+
+.pink {
+  background: #ef4d91;
+}
+
+.module-card h3 {
+  margin: 24px 0 12px;
+  color: var(--ei-navy);
+}
+
+.module-card p {
+  color: var(--ei-muted);
+  line-height: 1.65;
+}
+
+.workflow-section {
+  background: var(--ei-page);
+}
+
+.workflow-line {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.workflow-step {
+  min-height: 190px;
+  padding: 24px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid var(--ei-line);
+  box-shadow: 0 12px 28px rgba(6, 37, 74, 0.05);
+}
+
+.workflow-step strong {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ei-blue);
+  color: #ffffff;
+}
+
+.workflow-step h4 {
+  margin: 18px 0 10px;
+  color: var(--ei-navy);
+}
+
+.workflow-step p {
+  color: var(--ei-muted);
+  line-height: 1.55;
+}
+
+.footer {
+  background: #004db8 !important;
+}
+
+.footer p,
+.footer a,
+.footer h4,
+.foot_copy p {
+  color: #ffffff !important;
+}
+
+.foot_copy {
+  background: #003f96 !important;
+}
+
+@media (max-width: 991px) {
+  .procedure-card,
+  .workflow-line {
+    margin-top: 32px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575px) {
+  .feature-hero {
+    padding: 56px 0;
+  }
+
+  .procedure-card,
+  .workflow-line {
+    grid-template-columns: 1fr;
+  }
+}

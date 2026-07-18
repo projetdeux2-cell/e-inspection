@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connexion - Inspection pédagogique</title>
+    <link rel="stylesheet" href="assets/css/connexion.css" />
+</head>
+<body>
+
+    <div class="login-wrapper">
+
+        <!-- Colonne gauche : présentation -->
+        <div class="left-panel">
+
+
+			<div class="brand">
+
+    <img src="assets/img/logo1.png" alt="Logo" class="logo">
+
+    <div class="brand-text">
+        <h1>
+            INSPECTION<br>
+            PÉDAGOGIQUE<br>
+            <span>NUMÉRIQUE</span>
+        </h1>
+    </div>
+
+</div>
+
+            <div class="left-content">
+               
+
+                <p>
+                    La plateforme numérique du Ministère des Enseignements
+                    Maternel et Primaire pour des inspections efficaces et un suivi
+                    rigoureux de la qualité de l’enseignement.
+                </p>
+            </div>
+
+            <div class="illustration">
+                <img src="assets/img/login.png" alt="École primaire" />
+            </div>
+
+        </div>
+
+        <!-- Colonne droite : formulaire -->
+        <div class="right-panel">
+
+            <div class="form-box">
+                <h2>Connexion</h2>
+                <p class="subtitle">
+                    Connectez-vous à votre espace d’inspection pédagogique.
+                </p>
+
+                <form data-login-form>
+                    <div class="login-message" data-login-message></div>
+
+                    <div class="input-group">
+                        <label for="email">Adresse email</label>
+                        <input type="email" name="email" id="email" placeholder="exemple@email.com" required />
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">Mot de passe</label>
+                        <input type="password" name="password" id="password" placeholder="••••••••" required />
+                    </div>
+
+                    <div class="options">
+                        <label>
+                            <input type="checkbox" />
+                            Se souvenir de moi
+                        </label>
+                        <a href="#">Mot de passe oublié ?</a>
+                    </div>
+
+                    <button type="submit" class="btn-login">
+                        Se connecter
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="assets/js/api-einspect.js"></script>
+    <script src="assets/js/auth-einspect.js"></script>
+</body>
+</html>

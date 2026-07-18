@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nos Sports — USE | Union Sportive des Élites</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ===== PAGE SPORTS ===== */
+    .page-hero {
+      background: linear-gradient(120deg, #E6F7FB 0%, #FFF8F0 100%);
+      padding: 50px 40px 30px;
+      text-align: center;
+    }
+    .page-hero h1 {
+      font-size: 36px;
+      font-weight: 900;
+      color: #0D0D0D;
+    }
+    .page-hero h1 span { color: #0096C7; }
+    .page-hero p {
+      color: #555;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+
+    /* ===== SECTION SPORT DÉTAILLÉE ===== */
+    .sport-section {
+      padding: 60px 40px;
+      display: flex;
+      align-items: center;
+      gap: 50px;
+    }
+    .sport-section:nth-child(even) {
+      flex-direction: row-reverse;
+      background: #F8F9FA;
+    }
+    .sport-icon-big {
+      font-size: 120px;
+      min-width: 160px;
+      text-align: center;
+    }
+    .sport-info { flex: 1; }
+    .sport-tag {
+      display: inline-block;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .sport-info h2 {
+      font-size: 30px;
+      font-weight: 900;
+      color: #0D0D0D;
+      margin-bottom: 10px;
+    }
+    .sport-info p {
+      color: #555;
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+    .sport-details {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .detail-box {
+      background: #fff;
+      border-radius: 10px;
+      padding: 12px 18px;
+      text-align: center;
+      border-bottom: 3px solid var(--c);
+      min-width: 100px;
+    }
+    .detail-box strong {
+      display: block;
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--c);
+    }
+    .detail-box span {
+      font-size: 11px;
+      color: #777;
+    }
+    .btn-sport {
+      display: inline-block;
+      padding: 11px 26px;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      background: var(--c);
+    }
+
+    /* ===== SECTION AUTRES SPORTS ===== */
+    .autres-sports {
+      padding: 50px 40px;
+      background: #fff;
+      text-align: center;
+    }
+    .autres-grid {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+    .autre-card {
+      background: #F8F9FA;
+      border-radius: 14px;
+      padding: 20px 28px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #333;
+      border: 2px dashed #ddd;
+    }
+    .autre-card span { font-size: 28px; display: block; margin-bottom: 8px; }
+
+    /* ===== CTA ===== */
+    .cta {
+      background: linear-gradient(135deg, #0096C7, #E85D04);
+      padding: 60px 40px;
+      text-align: center;
+    }
+    .cta h2 { color: #fff; font-size: 30px; font-weight: 900; margin-bottom: 10px; }
+    .cta p { color: rgba(255,255,255,0.85); margin-bottom: 28px; font-size: 16px; }
+    .btn-white {
+      background: #fff;
+      color: #E85D04;
+      padding: 14px 32px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 15px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="logo-wrap">
+      <div class="logo-badge">USE</div>
+      <div class="logo-text">Union Sportive des Élites <span>CENTRE DE FORMATION SPORTIF</span></div>
+    </div>
+    <div class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="sports.html">Nos Sports</a>
+      <a href="inscription.php">Tarifs</a>
+      <a href="apropos.html" style="color:#0096C7; font-weight:800;">À propos</a>
+      <a href="contact.html">Contact</a>
+    </div>
+   <a href="connexion.php" class="btn-nav">Connexion</a>
+  </nav>
+
+  <!-- TITRE PAGE -->
+  <section class="page-hero">
+    <h1>Nos <span>Disciplines Sportives</span></h1>
+    <p>Choisissez votre sport et rejoignez une équipe de champions accompagnés par des coachs professionnels</p>
+  </section>
+
+  <!-- FOOTBALL -->
+  <section class="sport-section">
+    <div class="sport-icon-big">⚽</div>
+    <div class="sport-info">
+      <span class="sport-tag" style="background:#1A7A3C;">Football</span>
+      <h2>Football</h2>
+      <p>
+        Développez votre technique, votre tactique et votre esprit d'équipe au plus haut niveau.
+        Nos coachs certifiés vous accompagnent de la formation des jeunes jusqu'au niveau compétitif.
+        Entraînements réguliers, matchs amicaux et tournois organisés tout au long de l'année.
+      </p>
+      <div class="sport-details">
+        <div class="detail-box" style="--c:#1A7A3C;">
+          <strong>3</strong><span>Coachs</span>
+        </div>
+        <div class="detail-box" style="--c:#1A7A3C;">
+          <strong>150+</strong><span>Membres</span>
+        </div>
+        <div class="detail-box" style="--c:#1A7A3C;">
+          <strong>5j/7</strong><span>Entraînements</span>
+        </div>
+      </div>
+      <a href="inscription.html" class="btn-sport" style="--c:#1A7A3C;">S'inscrire en Football</a>
+    </div>
+  </section>
+
+  <!-- BASKETBALL -->
+  <section class="sport-section">
+    <div class="sport-icon-big">🏀</div>
+    <div class="sport-info">
+      <span class="sport-tag" style="background:#E85D04;">Basketball</span>
+      <h2>Basketball</h2>
+      <p>
+        Améliorez votre agilité, votre précision et votre jeu collectif.
+        Du dribble aux tirs à 3 points, nos entraîneurs vous forment avec des méthodes modernes et efficaces.
+        Plusieurs niveaux disponibles : débutant, intermédiaire et avancé.
+      </p>
+      <div class="sport-details">
+        <div class="detail-box" style="--c:#E85D04;">
+          <strong>2</strong><span>Coachs</span>
+        </div>
+        <div class="detail-box" style="--c:#E85D04;">
+          <strong>120+</strong><span>Membres</span>
+        </div>
+        <div class="detail-box" style="--c:#E85D04;">
+          <strong>4j/7</strong><span>Entraînements</span>
+        </div>
+      </div>
+      <a href="inscription.html" class="btn-sport" style="--c:#E85D04;">S'inscrire en Basketball</a>
+    </div>
+  </section>
+
+  <!-- RAQUETBALL -->
+  <section class="sport-section">
+    <div class="sport-icon-big">🎾</div>
+    <div class="sport-info">
+      <span class="sport-tag" style="background:#B8860B;">Raquetball</span>
+      <h2>Raquetball</h2>
+      <p>
+        Sport de vitesse et de réflexes, le raquetball développe votre concentration et votre explosivité.
+        Nos courts couverts sont disponibles toute la semaine.
+        Cours individuels et collectifs selon votre niveau.
+      </p>
+      <div class="sport-details">
+        <div class="detail-box" style="--c:#B8860B;">
+          <strong>2</strong><span>Coachs</span>
+        </div>
+        <div class="detail-box" style="--c:#B8860B;">
+          <strong>80+</strong><span>Membres</span>
+        </div>
+        <div class="detail-box" style="--c:#B8860B;">
+          <strong>6j/7</strong><span>Disponible</span>
+        </div>
+      </div>
+      <a href="inscription.html" class="btn-sport" style="--c:#B8860B;">S'inscrire en Raquetball</a>
+    </div>
+  </section>
+
+  <!-- NATATION -->
+  <section class="sport-section">
+    <div class="sport-icon-big">🏊</div>
+    <div class="sport-info">
+      <span class="sport-tag" style="background:#0096C7;">Natation</span>
+      <h2>Natation</h2>
+      <p>
+        Travaillez votre endurance, votre souffle et votre technique dans notre piscine olympique.
+        Cours pour tous les âges et tous les niveaux : débutants, confirmés et compétiteurs.
+        Nos maîtres-nageurs certifiés assurent votre sécurité et votre progression.
+      </p>
+      <div class="sport-details">
+        <div class="detail-box" style="--c:#0096C7;">
+          <strong>3</strong><span>Coachs</span>
+        </div>
+        <div class="detail-box" style="--c:#0096C7;">
+          <strong>200+</strong><span>Membres</span>
+        </div>
+        <div class="detail-box" style="--c:#0096C7;">
+          <strong>7j/7</strong><span>Piscine ouverte</span>
+        </div>
+      </div>
+      <a href="inscription.html" class="btn-sport" style="--c:#0096C7;">S'inscrire en Natation</a>
+    </div>
+  </section>
+
+  <!-- AUTRES SPORTS -->
+  <section class="autres-sports">
+    <h2 class="section-title">Et <span>bien d'autres sports</span> à venir !</h2>
+    <p class="section-sub">USE continue de s'agrandir pour vous offrir encore plus de disciplines</p>
+    <div class="autres-grid">
+      <div class="autre-card"><span>🥊</span>Boxe</div>
+      <div class="autre-card"><span>🏋️</span>Musculation</div>
+      <div class="autre-card"><span>🏐</span>Volleyball</div>
+      <div class="autre-card"><span>🏓</span>Tennis de table</div>
+      <div class="autre-card"><span>🥋</span>Arts martiaux</div>
+    </div>
+  </section>
+
+  <!-- APPEL À L'ACTION -->
+  <section class="cta">
+    <h2>Prêt à choisir ton sport ? 💪</h2>
+    <p>Inscris-toi dès aujourd'hui et commence ton parcours vers l'excellence sportive</p>
+    <a href="inscription.html" class="btn-white">Commencer mon inscription</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-logo">USE — Union Sportive des Élites</div>
+    <p>© 2025 — Tous droits réservés</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
