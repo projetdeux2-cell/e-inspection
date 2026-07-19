@@ -1,47 +1,587 @@
 <!DOCTYPE html>
 <html lang="fr">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>Gestion des utilisateurs - EducInspect</title>
-		<link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
-		<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-		<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
-		<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
-		<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-	</head>
-	<body data-required-role="admin" data-resource="users">
-		<div class="app-shell">
-			<aside class="sidebar">
-				<a class="brand" href="../index.html"><img src="../assets/img/logo.png" alt="EducInspect"><span>EducInspect</span></a>
-				<div class="profile"><div class="avatar">AD</div><div><strong data-user-name>Administrateur</strong><p data-user-role>Gestion centrale</p></div></div>
-				<nav class="side-nav">
-					<a href="admin.html"><span class="ti-dashboard"></span>Dashboard admin</a>
-					<a class="active" href="admin-utilisateurs.html"><span class="ti-user"></span>Utilisateurs</a>
-					<a href="admin-departements.html"><span class="ti-map-alt"></span>Departements</a>
-					<a href="admin-communes.html"><span class="ti-location-pin"></span>Communes</a>
-					<a href="admin-ecoles.html"><span class="ti-home"></span>Ecoles</a>
-					<a href="admin-inspecteurs.html"><span class="ti-id-badge"></span>Inspecteurs</a>
-					<a href="admin-parametres.html"><span class="ti-settings"></span>Parametres</a>
-					<a href="deconnexion.html"><span class="ti-power-off"></span>Deconnexion</a>
-				</nav>
-				<p class="copyright">&copy; 2026 EducInspect</p>
-			</aside>
-			<main class="main">
-				<header class="topbar">
-					<button class="menu-btn" type="button"><span class="ti-menu"></span></button>
-					<div class="search"><span class="ti-search"></span><input data-dashboard-search type="search" placeholder="Rechercher dans la plateforme..."></div>
-					<div class="top-actions"><button class="icon-btn" type="button"><span class="ti-bell"></span><em>0</em></button><div class="user-menu"><span class="ti-user"></span> <span data-user-role>Admin</span></div></div>
-				</header>
-				<section class="dashboard-head">
-					<div><p class="eyebrow">Administration generale</p><h1>Gestion des comptes utilisateurs</h1><p>Ajoutez, modifiez et supprimez les comptes administratifs et autres profils du systeme.</p></div>
-					<div class="period"><span class="ti-user"></span> <strong data-live-status>Configuration live</strong></div>
-				</section>
-			</main>
-		</div>
-		<script src="../assets/js/api-einspect.js"></script>
-		<script src="../assets/js/role-guard-einspect.js"></script>
-		<script src="../assets/js/dashboard-einspect.js"></script>
-		<script src="../assets/js/role-dynamic-einspect.js"></script>
-	</body>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Gestion des utilisateurs - EducInspect</title>
+	<link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
+	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
+	<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+	<style>
+		.page-header {
+			padding: 24px 0 16px 0;
+		}
+
+		.page-header .page-title h1 {
+			font-size: 28px;
+			font-weight: 800;
+			margin: 0 0 4px 0;
+			color: #0a1e3c;
+			letter-spacing: -0.3px;
+		}
+
+		.page-header .page-title p {
+			font-size: 15px;
+			color: #6b7a93;
+			margin: 0;
+			font-weight: 400;
+		}
+
+		/* ===== TOOLBAR ===== */
+		.toolbar {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+			margin-bottom: 28px;
+			background: #ffffff;
+			padding: 16px 24px;
+			border-radius: 16px;
+			box-shadow: 0 2px 8px rgba(10, 30, 60, 0.06);
+			border: 1px solid #eef2f7;
+		}
+
+		.toolbar .search-box {
+			position: relative;
+			flex: 1 1 320px;
+			min-width: 200px;
+		}
+
+		.toolbar .search-box span.ti-search {
+			position: absolute;
+			left: 14px;
+			top: 50%;
+			transform: translateY(-50%);
+			font-size: 18px;
+			color: #9aaec5;
+			pointer-events: none;
+		}
+
+		.toolbar .search-box input {
+			width: 100%;
+			padding: 10px 16px 10px 44px;
+			border: 1px solid #e4e9f0;
+			border-radius: 12px;
+			font-size: 14px;
+			font-family: 'Mulish', sans-serif;
+			background: #f8fafc;
+			transition: border-color 0.2s, box-shadow 0.2s;
+			color: #1a2a4a;
+		}
+
+		.toolbar .search-box input::placeholder {
+			color: #9aaec5;
+		}
+
+		.toolbar .search-box input:focus {
+			outline: none;
+			border-color: #2a6df4;
+			box-shadow: 0 0 0 4px rgba(42, 109, 244, 0.10);
+			background: #ffffff;
+		}
+
+		.toolbar .btn-add {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 10px 24px;
+			background: #2a6df4;
+			color: #ffffff;
+			font-weight: 700;
+			font-size: 14px;
+			font-family: 'Mulish', sans-serif;
+			border: none;
+			border-radius: 12px;
+			text-decoration: none;
+			transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+			box-shadow: 0 4px 12px rgba(42, 109, 244, 0.25);
+			white-space: nowrap;
+		}
+
+		.toolbar .btn-add:hover {
+			background: #1a5ad9;
+			color: #ffffff;
+			text-decoration: none;
+			box-shadow: 0 6px 18px rgba(42, 109, 244, 0.35);
+			transform: translateY(-1px);
+		}
+
+		.toolbar .btn-add:active {
+			transform: translateY(0);
+			box-shadow: 0 2px 8px rgba(42, 109, 244, 0.20);
+		}
+
+		.toolbar .btn-add span.ti-plus {
+			font-size: 18px;
+			font-weight: 600;
+		}
+
+		/* ===== PANEL / TABLE ===== */
+		.panel {
+			background: #ffffff;
+			border-radius: 16px;
+			border: 1px solid #eef2f7;
+			box-shadow: 0 2px 8px rgba(10, 30, 60, 0.04);
+			overflow: hidden;
+			margin-bottom: 32px;
+		}
+
+		.panel .panel-head {
+			padding: 18px 24px 12px 24px;
+			border-bottom: 1px solid #f0f3f8;
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+		}
+
+		.panel .panel-head .panel-title {
+			font-weight: 700;
+			font-size: 16px;
+			color: #0a1e3c;
+			margin: 0;
+		}
+
+		.panel .panel-head .panel-badge {
+			font-size: 13px;
+			font-weight: 600;
+			color: #6b7a93;
+			background: #f0f3f8;
+			padding: 4px 14px;
+			border-radius: 40px;
+		}
+
+		.data-table {
+			width: 100%;
+			border-collapse: collapse;
+			font-family: 'Mulish', sans-serif;
+			font-size: 14px;
+		}
+
+		.data-table thead {
+			background: #f8fafc;
+		}
+
+		.data-table thead th {
+			padding: 14px 20px;
+			text-align: left;
+			font-weight: 700;
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 0.4px;
+			color: #6b7a93;
+			border-bottom: 1px solid #eef2f7;
+			white-space: nowrap;
+		}
+
+		.data-table tbody td {
+			padding: 14px 20px;
+			border-bottom: 1px solid #f0f3f8;
+			color: #1a2a4a;
+			vertical-align: middle;
+		}
+
+		.data-table tbody tr:last-child td {
+			border-bottom: none;
+		}
+
+		.data-table tbody tr:hover {
+			background: #fafcff;
+		}
+
+		/* Colonnes */
+		.data-table .col-id {
+			font-weight: 600;
+			color: #6b7a93;
+			font-size: 13px;
+		}
+
+		.data-table .col-user {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.data-table .col-user .avatar-sm {
+			width: 36px;
+			height: 36px;
+			border-radius: 50%;
+			background: #eef4ff;
+			color: #2a6df4;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 700;
+			font-size: 14px;
+			flex-shrink: 0;
+			text-transform: uppercase;
+		}
+
+		.data-table .col-user .user-info {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.data-table .col-user .user-info .name {
+			font-weight: 700;
+			color: #0a1e3c;
+		}
+
+		.data-table .col-user .user-info .email {
+			font-size: 13px;
+			color: #6b7a93;
+		}
+
+		/* Badges de rôle */
+		.role-badge {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 4px 14px;
+			border-radius: 40px;
+			font-size: 12px;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.2px;
+		}
+
+		.role-badge.admin {
+			background: #eef4ff;
+			color: #2a6df4;
+		}
+
+		.role-badge.inspecteur {
+			background: #e6f7ed;
+			color: #0f9d6e;
+		}
+
+		.role-badge.directeur {
+			background: #fef6e6;
+			color: #c47a0e;
+		}
+
+		.role-badge.enseignant {
+			background: #f3f0ff;
+			color: #6b4cbf;
+		}
+
+		/* Statut */
+		.status {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			font-size: 13px;
+			font-weight: 600;
+		}
+
+		.status .dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			display: inline-block;
+		}
+
+		.status.active .dot {
+			background: #0f9d6e;
+		}
+
+		.status.inactive .dot {
+			background: #d14c4c;
+		}
+
+		.status.pending .dot {
+			background: #c47a0e;
+		}
+
+		/* Actions */
+		.actions {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			justify-content: flex-end;
+		}
+
+		.actions .action-btn {
+			width: 34px;
+			height: 34px;
+			border-radius: 10px;
+			border: none;
+			background: transparent;
+			color: #6b7a93;
+			font-size: 16px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			transition: background 0.15s, color 0.15s, transform 0.1s;
+			cursor: pointer;
+			text-decoration: none;
+		}
+
+		.actions .action-btn:hover {
+			background: #f0f3f8;
+			color: #0a1e3c;
+			transform: scale(1.05);
+			text-decoration: none;
+		}
+
+		.actions .action-btn.edit:hover {
+			background: #eef4ff;
+			color: #2a6df4;
+		}
+
+		.actions .action-btn.delete:hover {
+			background: #fde8e8;
+			color: #d14c4c;
+		}
+
+		.actions .action-btn.view:hover {
+			background: #e6f7ed;
+			color: #0f9d6e;
+		}
+
+		/* ===== EMPTY STATE ===== */
+		.empty-state {
+			text-align: center;
+			padding: 48px 24px;
+			color: #6b7a93;
+		}
+
+		.empty-state span.ti-user {
+			font-size: 48px;
+			color: #dce3ec;
+			display: block;
+			margin-bottom: 16px;
+		}
+
+		.empty-state h4 {
+			font-weight: 700;
+			color: #0a1e3c;
+			margin-bottom: 8px;
+		}
+
+		/* ===== RESPONSIVE ===== */
+		@media (max-width: 768px) {
+			.toolbar {
+				flex-direction: column;
+				align-items: stretch;
+				padding: 16px 18px;
+			}
+
+			.toolbar .search-box {
+				flex: 1 1 auto;
+				min-width: unset;
+			}
+
+			.toolbar .btn-add {
+				justify-content: center;
+				padding: 12px 20px;
+			}
+
+			.page-header .page-title h1 {
+				font-size: 22px;
+			}
+
+			.data-table thead th,
+			.data-table tbody td {
+				padding: 10px 14px;
+				font-size: 13px;
+			}
+
+			.data-table .col-user .avatar-sm {
+				width: 30px;
+				height: 30px;
+				font-size: 12px;
+			}
+
+			.panel .panel-head {
+				flex-direction: column;
+				align-items: flex-start;
+				padding: 14px 18px 10px 18px;
+			}
+
+			.actions .action-btn {
+				width: 30px;
+				height: 30px;
+				font-size: 14px;
+			}
+		}
+	</style>
+</head>
+
+<body data-required-role="admin" data-resource="users">
+
+	<div class="app-shell">
+
+		<!-- ===== SIDEBAR ===== -->
+		<aside class="sidebar">
+			<a class="brand" href="../index.html">
+				<img src="../assets/img/logo.png" alt="EducInspect">
+				<span>EducInspect</span>
+			</a>
+			<div class="profile">
+				<div class="avatar">AD</div>
+				<div>
+					<strong data-user-name>Administrateur</strong>
+					<p data-user-role>Gestion centrale</p>
+				</div>
+			</div>
+			<nav class="side-nav">
+				<a href="admin.html"><span class="ti-dashboard"></span>Dashboard admin</a>
+				<a class="active" href="admin-utilisateurs.html"><span class="ti-user"></span>Utilisateurs</a>
+				<a href="admin-departements.html"><span class="ti-map-alt"></span>Départements</a>
+				<a href="admin-communes.html"><span class="ti-location-pin"></span>Communes</a>
+				<a href="admin-ecoles.html"><span class="ti-home"></span>Écoles</a>
+				<a href="admin-inspecteurs.html"><span class="ti-id-badge"></span>Inspecteurs</a>
+				<a href="admin-parametres.html"><span class="ti-settings"></span>Paramètres</a>
+				<a href="deconnexion.html"><span class="ti-power-off"></span>Déconnexion</a>
+			</nav>
+			<p class="copyright">&copy; 2026 EducInspect</p>
+		</aside>
+
+		<!-- ===== MAIN CONTENT ===== -->
+		<main class="main">
+
+			<!-- ===== TOPBAR ===== -->
+			<header class="topbar">
+				<button class="menu-btn" type="button"><span class="ti-menu"></span></button>
+				<!-- <div class="search">
+                    <span class="ti-search"></span>
+                    <input data-dashboard-search type="search" placeholder="Rechercher dans la plateforme...">
+                </div> -->
+				<div class="top-actions">
+					<button class="icon-btn" type="button"><span class="ti-bell"></span><em>0</em></button>
+					<div class="user-menu"><span class="ti-user"></span> <span data-user-role>Admin</span></div>
+				</div>
+			</header>
+
+			<!-- ===== DASHBOARD HEAD ===== -->
+			<section class="dashboard-head">
+				<!-- <div>
+                    <p class="eyebrow">Administration générale</p>
+                    <h1>Gestion des utilisateurs</h1>
+                    <p>Ajoutez, modifiez et supprimez les comptes administratifs et autres profils du système.</p>
+                </div> -->
+				<!-- <div class="period">
+                    <span class="ti-user"></span>
+                    <strong data-live-status>//
+Configuration live</strong>
+                </div> -->
+			</section>
+
+			<!-- ===== PAGE HEADER ===== -->
+			<!-- <section class="page-header">
+                <div class="page-title">
+                    <h1> Gestion des utilisateurs</h1>
+                    <p>Administration des comptes et des rôles — <span id="userCount">0</span> utilisateur(s)</p>
+                </div>
+            </section> -->
+
+			<!-- ===== TOOLBAR ===== -->
+			<section class="toolbar">
+				<div class="search-box">
+					<span class="ti-search"></span>
+					<input type="text" id="searchUsers"
+						placeholder="Rechercher un utilisateur par nom, email ou rôle...">
+				</div>
+				<a href="ajouter-utilisateur.html" class="btn-add">
+					<span class="ti-plus"></span>
+					Ajouter un utilisateur
+				</a>
+			</section>
+
+			<!-- ===== PANEL + TABLE ===== -->
+			<!-- <section class="panel">
+                <div class="panel-head">
+                    <h3 class="panel-title">Liste des utilisateurs</h3>
+                    <span class="panel-badge" id="userBadge">0 inscrits</span>
+                </div> -->
+
+			<!-- <div class="table-responsive">
+                    <table class="data-table" id="userTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Utilisateur</th>
+                                <th>Rôle</th>
+                                <th>Statut</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"> -->
+			<!-- Les données sont injectées dynamiquement par le back‑end -->
+			<!-- Exemple de ligne (à supprimer en production) : -->
+			<!--
+                            <tr>
+                                <td class="col-id">1</td>
+                                <td>
+                                    <div class="col-user">
+                                        <div class="avatar-sm">AD</div>
+                                        <div class="user-info">
+                                            <span class="name">Amara Diallo</span>
+                                            <span class="email">a.diallo@educinspect.sn</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="role-badge admin"><span class="ti-user"></span> Admin</span></td>
+                                <td><span class="status active"><span class="dot"></span> Actif</span></td>
+                                <td>
+                                    <div class="actions">
+                                        <a href="#" class="action-btn view"><span class="ti-eye"></span></a>
+                                        <a href="modifier-utilisateur.html" class="action-btn edit"><span class="ti-pencil"></span></a>
+                                        <button class="action-btn delete"><span class="ti-trash"></span></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            -->
+			<!-- </tbody>
+                    </table>
+                </div> -->
+			<!-- </section> -->
+
+		</main>
+	</div>
+
+	<!-- ===== SCRIPTS ===== -->
+	<script src="../assets/js/api-einspect.js"></script>
+	<script src="../assets/js/role-guard-einspect.js"></script>
+	<script src="../assets/js/dashboard-einspect.js"></script>
+	<script src="../assets/js/role-dynamic-einspect.js"></script>
+
+	<!--
+        Le script ci‑dessous est un exemple d’intégration avec votre back‑end.
+        Adaptez‑le à votre API.
+    -->
+	<script>
+		// Exemple d’appel API pour charger les utilisateurs
+		/*
+		document.addEventListener('DOMContentLoaded', function() {
+			fetch('/api/users')
+				.then(response => response.json())
+				.then(data => {
+					const tbody = document.getElementById('tableBody');
+					const userCount = document.getElementById('userCount');
+					const userBadge = document.getElementById('userBadge');
+
+					// Mise à jour des compteurs
+					userCount.textContent = data.length;
+					userBadge.textContent = data.length + ' inscrit' + (data.length > 1 ? 's' : '');
+
+					// Génération des lignes
+					tbody.innerHTML = data.map(user => {
+						// … construction des colonnes avec les classes appropriées
+						return `<tr>...</tr>`;
+					}).join('');
+				})
+				.catch(error => console.error('Erreur de chargement des utilisateurs :', error));
+		});
+		*/
+	</script>
+</body>
+
 </html>

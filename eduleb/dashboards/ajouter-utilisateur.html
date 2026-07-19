@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ajouter un utilisateur - EducInspect</title>
+    <link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
+    <link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/fonts/themify-icons.css" rel="stylesheet">
+    <link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===== FORMULAIRE ===== */
+        .form-container {
+            max-width: 720px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #eef2f7;
+            box-shadow: 0 2px 8px rgba(10, 30, 60, 0.04);
+            padding: 32px 40px;
+        }
+        .form-container .form-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0a1e3c;
+            margin-bottom: 8px;
+        }
+        .form-container .form-subtitle {
+            font-size: 14px;
+            color: #6b7a93;
+            margin-bottom: 28px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 700;
+            font-size: 14px;
+            color: #1a2a4a;
+            margin-bottom: 6px;
+        }
+        .form-group label .required {
+            color: #d14c4c;
+            margin-left: 2px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid #e4e9f0;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: 'Mulish', sans-serif;
+            background: #f8fafc;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            color: #1a2a4a;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #2a6df4;
+            box-shadow: 0 0 0 4px rgba(42, 109, 244, 0.10);
+            background: #ffffff;
+        }
+        .form-control::placeholder {
+            color: #9aaec5;
+        }
+        select.form-control {
+            appearance: auto;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7a93' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
+        }
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
+            flex-wrap: wrap;
+        }
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 28px;
+            background: #2a6df4;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 14px;
+            font-family: 'Mulish', sans-serif;
+            border: none;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(42, 109, 244, 0.25);
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            background: #1a5ad9;
+            box-shadow: 0 6px 18px rgba(42, 109, 244, 0.35);
+            transform: translateY(-1px);
+            color: #fff;
+        }
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 28px;
+            background: #f0f3f8;
+            color: #1a2a4a;
+            font-weight: 700;
+            font-size: 14px;
+            font-family: 'Mulish', sans-serif;
+            border: 1px solid #e4e9f0;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.1s;
+            cursor: pointer;
+        }
+        .btn-secondary:hover {
+            background: #e4e9f0;
+            text-decoration: none;
+            color: #0a1e3c;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 24px 18px;
+            }
+            .form-container .form-title {
+                font-size: 20px;
+            }
+            .form-actions {
+                flex-direction: column;
+            }
+            .form-actions .btn-primary,
+            .form-actions .btn-secondary {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body data-required-role="admin" data-resource="users">
+
+    <div class="app-shell">
+
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar">
+            <a class="brand" href="../index.html">
+                <img src="../assets/img/logo.png" alt="EducInspect">
+                <span>EducInspect</span>
+            </a>
+            <div class="profile">
+                <div class="avatar">AD</div>
+                <div>
+                    <strong data-user-name>Administrateur</strong>
+                    <p data-user-role>Gestion centrale</p>
+                </div>
+            </div>
+            <nav class="side-nav">
+                <a href="admin.html"><span class="ti-dashboard"></span>Dashboard admin</a>
+                <a href="admin-utilisateurs.html"><span class="ti-user"></span>Utilisateurs</a>
+                <a href="admin-departements.html"><span class="ti-map-alt"></span>Départements</a>
+                <a href="admin-communes.html"><span class="ti-location-pin"></span>Communes</a>
+                <a href="admin-ecoles.html"><span class="ti-home"></span>Écoles</a>
+                <a href="admin-inspecteurs.html"><span class="ti-id-badge"></span>Inspecteurs</a>
+                <a href="admin-parametres.html"><span class="ti-settings"></span>Paramètres</a>
+                <a href="deconnexion.html"><span class="ti-power-off"></span>Déconnexion</a>
+            </nav>
+            <p class="copyright">&copy; 2026 EducInspect</p>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main">
+
+            <!-- ===== TOPBAR ===== -->
+            <!-- <header class="topbar">
+                <button class="menu-btn" type="button"><span class="ti-menu"></span></button>
+                <div class="search">
+                    <span class="ti-search"></span>
+                    <input data-dashboard-search type="search" placeholder="Rechercher dans la plateforme...">
+                </div>
+                <div class="top-actions">
+                    <button class="icon-btn" type="button"><span class="ti-bell"></span><em>0</em></button>
+                    <div class="user-menu"><span class="ti-user"></span> <span data-user-role>Admin</span></div>
+                </div>
+            </header> -->
+
+            <!-- ===== DASHBOARD HEAD ===== -->
+            <section class="dashboard-head">
+                <div>
+                    <!-- <p class="eyebrow">Administration générale</p> -->
+                    <h1>Ajouter un utilisateur</h1>
+                    <p>Créez un nouveau compte utilisateur pour le système EducInspect.</p>
+                </div>
+                <!-- <div class="period">
+                    <span class="ti-user"></span>
+                    <strong data-live-status>//
+Configuration live</strong>
+                </div> -->
+            </section>
+
+            <!-- ===== FORMULAIRE ===== -->
+            <section class="form-container">
+                <h2 class="form-title"> Nouvel utilisateur</h2>
+                <p class="form-subtitle">Remplissez tous les champs pour créer un compte.</p>
+
+                <form id="addUserForm" method="POST" action="/api/users" novalidate>
+                    <!-- Nom complet -->
+                    <div class="form-group">
+                        <label for="fullName">Nom complet <span class="required">*</span></label>
+                        <input type="text" id="fullName" name="fullName" class="form-control" placeholder="Ex: Mamadou Diallo" required autofocus>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-group">
+                        <label for="email">Email <span class="required">*</span></label>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="exemple@educinspect.sn" required>
+                    </div>
+
+                    <!-- Mot de passe -->
+                    <div class="form-group">
+                        <label for="password">Mot de passe <span class="required">*</span></label>
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Minimum 8 caractères" required minlength="8">
+                    </div>
+
+                    <!-- Rôle -->
+                    <div class="form-group">
+                        <label for="role">Rôle <span class="required">*</span></label>
+                        <select id="role" name="role" class="form-control" required>
+                            <option value="">Sélectionner un rôle</option>
+                            <option value="admin">Admin</option>
+                            <option value="inspecteur">Inspecteur</option>
+                            <option value="directeur">Directeur</option>
+                            <option value="enseignant">Enseignant</option>
+                        </select>
+                    </div>
+
+                    <!-- Boutons -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">
+                            <span class="ti-save"></span> Enregistrer
+                        </button>
+                        <a href="admin-utilisateurs.html" class="btn-secondary">
+                            <span class="ti-close"></span> Annuler
+                        </a>
+                    </div>
+                </form>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="../assets/js/api-einspect.js"></script>
+    <script src="../assets/js/role-guard-einspect.js"></script>
+    <!-- <script src="../assets/js/dashboard-einspect.js"></script>
+    <script src="../assets/js/role-dynamic-einspect.js"></script> -->
+
+    <script>
+        // Gestion du formulaire d'ajout (exemple avec fetch)
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('addUserForm');
+
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                // Récupération des données
+                const formData = new FormData(form);
+                const data = {
+                    name: formData.get('fullName'),
+                    email: formData.get('email'),
+                    password: formData.get('password'),
+                    role: formData.get('role')
+                };
+
+                // Validation basique
+                if (!data.name || !data.email || !data.password || !data.role) {
+                    alert('Veuillez remplir tous les champs obligatoires.');
+                    return;
+                }
+                if (data.password.length < 8) {
+                    alert('Le mot de passe doit contenir au moins 8 caractères.');
+                    return;
+                }
+
+                try {
+                    // Exemple d'envoi vers l'API (à adapter)
+                    // const response = await fetch('/api/users', {
+                    //     method: 'POST',
+                    //     headers: { 'Content-Type': 'application/json' },
+                    //     body: JSON.stringify(data)
+                    // });
+                    // if (!response.ok) throw new Error('Erreur lors de la création');
+                    // const result = await response.json();
+                    // alert('Utilisateur créé avec succès !');
+                    // window.location.href = 'admin-utilisateurs.html';
+
+                    // Simulation pour la démo
+                    console.log('Données envoyées :', data);
+                    alert('✅ Utilisateur créé avec succès (simulation). Redirection vers la liste.');
+                    window.location.href = 'admin-utilisateurs.html';
+                } catch (error) {
+                    console.error(error);
+                    alert('Erreur : ' + error.message);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

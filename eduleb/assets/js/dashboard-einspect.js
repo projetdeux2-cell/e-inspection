@@ -128,11 +128,11 @@ function renderReports(list = dashboardState.reports) {
 	document.querySelectorAll("[data-count='reports']").forEach((item) => item.textContent = list.length);
 }
 
-function renderRecommendations() {
-	const list = document.querySelector("[data-recommendations]");
-	if (!list) return;
-	list.innerHTML = dashboardState.recommendations.map((item) => `<li><span class="ti-check"></span>${item}</li>`).join("");
-}
+// function renderRecommendations() {
+// 	const list = document.querySelector("[data-recommendations]");
+// 	if (!list) return;
+// 	list.innerHTML = dashboardState.recommendations.map((item) => `<li><span class="ti-check"></span>${item}</li>`).join("");
+// }
 
 function setupSearch() {
 	const input = document.querySelector("[data-dashboard-search]");
@@ -320,10 +320,17 @@ function renderDashboardChart(statusMap = fallbackStatusChart) {
 function setupLogout() {
 	const logout = document.querySelector("[data-logout]");
 	if (!logout) return;
-	localStorage.removeItem("educinspect_user");
-	setTimeout(() => {
-		logout.textContent = "Session fermee. Vous pouvez revenir a la page de connexion.";
-	}, 600);
+
+	logout.addEventListener("click", async () => {
+		try {
+			await window.EducInspectApi.logout();
+		} catch (error) {
+			console.warn("Erreur de déconnexion API", error);
+		}
+
+		window.EducInspectApi.clearSession();
+		window.location.href = "../index.html";
+	});
 }
 
 function setupAdminProfileForm() {
@@ -415,7 +422,8 @@ async function loadApiDashboard() {
 
 		const notifications = Number(counts.recommendations_todo || 0) + Number(counts.missions || 0);
 		updateNotificationBadge(notifications);
-		updateLiveStatus(`Configuration live · ${counts.users || 0} comptes`);
+		updateLiveStatus(`//
+Configuration live · ${counts.users || 0} comptes`);
 	} catch (error) {
 		console.warn("Dashboard API indisponible, conservation des donnees de demonstration.", error);
 		renderDashboardChart(roleChartSource(document.body.dataset.requiredRole, {}));

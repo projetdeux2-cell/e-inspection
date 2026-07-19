@@ -1,5 +1,5 @@
 const EducInspectApi = {
-	baseUrl: "http://127.0.0.1/e-inspection-api/public/api",
+	baseUrl: "http://127.0.0.1:8000/api",
 
 	get token() {
 		return localStorage.getItem("educinspect_token");
