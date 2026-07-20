@@ -10,19 +10,21 @@ class CommuneSeeder extends Seeder
 {
     public function run(): void
     {
+        Commune::query()->delete();
+
         $communes = [
-            'ALI' => ['Kandi', 'Malanville', 'Banikoara'],
-            'ATA' => ['Natitingou', 'Tanguieta', 'Boukoumbe'],
-            'ATL' => ['Allada', 'Abomey-Calavi', 'Ouidah'],
-            'BOR' => ['Parakou', 'Nikki', 'Bembereke'],
-            'COL' => ['Dassa-Zoume', 'Savalou', 'Bante'],
-            'COU' => ['Aplahoue', 'Dogbo', 'Klouekanme'],
-            'DON' => ['Djougou', 'Bassila', 'Copargo'],
+            'ALI' => ['Kandi', 'Banikoara', 'Gogounou', 'Malanville', 'Karimama', 'Segbana'],
+            'ATA' => ['Natitingou', 'Boukoumbe', 'Cobly', 'Kerou', 'Materi', 'Pehunco', 'Tanguieta', 'Toucountouna'],
+            'ATL' => ['Abomey-Calavi', 'Allada', 'Kpomasse', 'Ouidah', 'So-Ava', 'Toffo', 'Tori-Bossito', 'Ze'],
+            'BOR' => ['Bembereke', 'Kalale', 'Nikki', 'Ndali', 'Parakou', 'Perere', 'Sinende', 'Tchaourou'],
+            'COL' => ['Bante', 'Dassa-Zoume', 'Glazoue', 'Ouesse', 'Savalou', 'Save'],
+            'COU' => ['Aplahoue', 'Djakotomey', 'Dogbo', 'Klouekanme', 'Lalo', 'Toviklin'],
+            'DON' => ['Bassila', 'Copargo', 'Djougou', 'Ouake'],
             'LIT' => ['Cotonou'],
-            'MON' => ['Lokossa', 'Come', 'Grand-Popo'],
-            'OUE' => ['Porto-Novo', 'Adjohoun', 'Avrankou'],
-            'PLA' => ['Pobe', 'Sakete', 'Ketou'],
-            'ZOU' => ['Abomey', 'Bohicon', 'Zagnanado'],
+            'MON' => ['Athieme', 'Bopa', 'Come', 'Grand-Popo', 'Houeyogbe', 'Lokossa'],
+            'OUE' => ['Adjohoun', 'Adjarra', 'Agueregues', 'Akpro-Misserete', 'Avrankou', 'Bonou', 'Dangbo', 'Porto-Novo', 'Seme-Kpodji'],
+            'PLA' => ['Adja-Ouere', 'Ifangni', 'Idigny', 'Ketou', 'Pobe', 'Sakete'],
+            'ZOU' => ['Abomey', 'Agbangnizoun', 'Bohicon', 'Cove', 'Djidja', 'Ouinhi', 'Za-Kpota', 'Zagnanado', 'Zogbodomey'],
         ];
 
         foreach ($communes as $departmentCode => $names) {
@@ -33,10 +35,11 @@ class CommuneSeeder extends Seeder
             }
 
             foreach ($names as $index => $name) {
-                Commune::firstOrCreate(
-                    ['code' => $departmentCode.'-'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT)],
-                    ['department_id' => $department->id, 'name' => $name]
-                );
+                Commune::query()->create([
+                    'department_id' => $department->id,
+                    'name' => $name,
+                    'code' => $departmentCode.'-'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
+                ]);
             }
         }
     }

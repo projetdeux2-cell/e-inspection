@@ -128,11 +128,11 @@ function renderReports(list = dashboardState.reports) {
 	document.querySelectorAll("[data-count='reports']").forEach((item) => item.textContent = list.length);
 }
 
-// function renderRecommendations() {
-// 	const list = document.querySelector("[data-recommendations]");
-// 	if (!list) return;
-// 	list.innerHTML = dashboardState.recommendations.map((item) => `<li><span class="ti-check"></span>${item}</li>`).join("");
-// }
+function renderRecommendations() {
+	const list = document.querySelector("[data-recommendations]");
+	if (!list) return;
+	list.innerHTML = dashboardState.recommendations.map((item) => `<li><span class="ti-check"></span>${item}</li>`).join("");
+}
 
 function setupSearch() {
 	const input = document.querySelector("[data-dashboard-search]");
@@ -435,7 +435,9 @@ async function initializeDashboard() {
 	await loadRemoteDashboardData();
 	renderMissions();
 	renderReports();
-	renderRecommendations();
+	if (typeof renderRecommendations === "function") {
+		renderRecommendations();
+	}
 	setupSearch();
 	setupMissionForm();
 	setupInspectionScore();

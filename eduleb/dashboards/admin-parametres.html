@@ -54,44 +54,67 @@
 				<!-- <div class="period"><span class="ti-settings"></span> <strong data-live-status>//
 						Configuration live</strong></div> -->
 			</section>
-			<section class="workspace-grid">
-				<div class="panel form-panel">
-					<div class="panel-head">
-						<h2>Mon profil</h2><span class="legend">Compte administrateur</span>
-					</div>
-					<form class="app-form" data-profile-form>
-						<label>Nom complet
-							<input name="name" type="text" placeholder="Nom complet" required>
-						</label>
-						<label>Email
-							<input name="email" type="email" placeholder="Email" required>
-						</label>
-						<label>Nouveau mot de passe
-							<input name="password" type="password" placeholder="Laisser vide pour conserver l'actuel">
-						</label>
-						<div class="form-actions">
-							<button class="primary-action" type="submit">Modifier mon profil</button>
-							<button class="secondary-action" type="reset">Annuler</button>
-						</div>
-						<p class="form-message" data-profile-message></p>
-					</form>
+			<section class="panel table-panel">
+				<div class="panel-head">
+					<h2>Parametres</h2><span class="legend">Configuration</span>
 				</div>
-				<div class="panel table-panel">
-					<div class="panel-head">
-						<h2>Actions disponibles</h2><span class="legend">Configuration</span>
+				<div class="resource-toolbar">
+					<div class="resource-search-box">
+						<span class="ti-search"></span>
+						<input type="search" placeholder="Rechercher dans les parametres...">
 					</div>
-					<div class="mission">
-						<strong>Modifier mon profil</strong>
-						<p>Changer le nom, l'email et le mot de passe du compte administrateur.</p>
-					</div>
-					<div class="mission">
-						<strong>Gerer les comptes</strong>
-						<p>Ajouter, modifier et supprimer les utilisateurs depuis l'espace gestion.</p>
-					</div>
-					<div class="mission">
-						<strong>Parametrer les referentiels</strong>
-						<p>Mettre à jour les departements, communes, ecoles et inspecteurs.</p>
-					</div>
+					<a class="resource-add-btn" href="modifier-profil.html">
+						<span class="ti-plus"></span>
+						Modifier mon profil
+					</a>
+				</div>
+				<div class="table-scroll">
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>Option</th>
+								<th>Description</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td><strong>Mon profil</strong></td>
+								<td>Changer le nom, l'email et le mot de passe du compte administrateur.</td>
+								<td><span class="badge info">À mettre à jour</span></td>
+							</tr>
+							<tr>
+								<td><strong>Sécurité du compte</strong></td>
+								<td>Gérer les règles d'accès, la protection des comptes et les permissions critiques.</td>
+								<td><span class="badge info">À contrôler</span></td>
+							</tr>
+							<tr>
+								<td><strong>Gestion des comptes</strong></td>
+								<td>Ajouter, modifier et supprimer les utilisateurs depuis l'espace gestion.</td>
+								<td><span class="badge info">Disponible</span></td>
+							</tr>
+							<tr>
+								<td><strong>Rôles et permissions</strong></td>
+								<td>Définir les profils administratifs et les droits d’accès aux modules.</td>
+								<td><span class="badge warning">À configurer</span></td>
+							</tr>
+							<tr>
+								<td><strong>Référentiels</strong></td>
+								<td>Mettre à jour les départements, communes, écoles et inspecteurs.</td>
+								<td><span class="badge success">Actif</span></td>
+							</tr>
+							<tr>
+								<td><strong>Notifications</strong></td>
+								<td>Configurer les alertes, les rappels et les messages envoyés à l’administration.</td>
+								<td><span class="badge success">Préparé</span></td>
+							</tr>
+							<tr>
+								<td><strong>Historique des accès</strong></td>
+								<td>Consulter les traces de connexion, les activités et les actions récentes.</td>
+								<td><span class="badge info">Journal</span></td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
 			</section>
 		</main>

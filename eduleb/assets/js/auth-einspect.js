@@ -47,10 +47,10 @@ if (logoutMessage) {
 				await window.EducInspectApi.logout();
 			}
 			window.EducInspectApi.clearSession();
-			logoutMessage.textContent = "Session fermee. Vous pouvez revenir a la page de connexion.";
+			logoutMessage.textContent = "Votre session a été fermée avec succès. Vous pouvez vous reconnecter dès maintenant.";
 		} catch (error) {
 			window.EducInspectApi.clearSession();
-			logoutMessage.textContent = "Session locale fermee. Le backend n'a pas repondu a la deconnexion.";
+			logoutMessage.textContent = "Votre session locale a été fermée. Le backend n’a pas répondu à la déconnexion.";
 		}
 	})();
 }

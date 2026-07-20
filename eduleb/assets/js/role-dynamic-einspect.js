@@ -267,13 +267,48 @@ function resourceTitle(resource) {
 
 function resourceTableHeaders(resource) {
 	const headers = {
-		users: ["Nom", "Email", "Role", "Action"],
+		users: ["Nom", "Email", "Role", "Statut", "Action"],
 		departments: ["Departement", "Code", "Chef-lieu", "Action"],
 		communes: ["Commune", "Code", "Departement", "Action"],
 		schools: ["Ecole", "Commune", "Directeur", "Effectif", "Action"],
 		inspectors: ["Inspecteur", "Matricule", "Specialite", "Telephone", "Action"]
 	};
 	return headers[resource] || ["Nom", "Action"];
+}
+
+function resourceActionLabel(resource) {
+	const labels = {
+		users: "Ajouter un utilisateur",
+		departments: "Ajouter un departement",
+		communes: "Ajouter une commune",
+		schools: "Ajouter une ecole",
+		inspectors: "Ajouter un inspecteur"
+	};
+	return labels[resource] || "Ajouter";
+}
+
+function resourceToolbarHtml(resource) {
+	if (resource === "users") return "";
+	const addPages = {
+		departments: "ajouter-departement.html",
+		communes: "ajouter-commune.html",
+		schools: "ajouter-ecole.html"
+	};
+	const addButton = resource === "inspectors"
+		? ""
+		: `<a class="resource-add-btn" href="${addPages[resource] || "#"}">
+				<span class="ti-plus"></span>
+				${resourceActionLabel(resource)}
+			</a>`;
+	return `
+		<div class="resource-toolbar">
+			<div class="resource-search-box">
+				<span class="ti-search"></span>
+				<input type="search" data-resource-search-input="${resource}" placeholder="Rechercher dans la liste...">
+			</div>
+			${addButton}
+		</div>
+	`;
 }
 
 function getResourceFields(resource) {
@@ -346,10 +381,14 @@ function renderResourceTable(resource, items) {
 	const rows = {
 		users: items.map((user) => {
 			const role = user.roles?.[0]?.name || "";
+			const isActive = Boolean(user.email_verified_at);
+			const statusLabel = isActive ? "Actif" : "Inactif";
+			const statusClass = isActive ? "success" : "warning";
 			return `<tr>
 				<td><strong>${safeText(user.name)}</strong><span>${safeText(user.email)}</span></td>
 				<td>${safeText(user.email)}</td>
 				<td><mark class="badge info">${roleLabel(role)}</mark></td>
+				<td><mark class="badge ${statusClass}">${statusLabel}</mark></td>
 				<td>
 					<button class="mini-btn" type="button" data-edit-resource="${resource}" data-id="${user.id}" data-name="${safeText(user.name)}" data-email="${safeText(user.email)}" data-role="${role}">Modifier</button>
 					<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${user.id}">Supprimer</button>
@@ -395,12 +434,17 @@ async function buildAdminResourcePage() {
 	if (!resource) return "";
 	const title = resourceTitle(resource);
 	const headers = resourceTableHeaders(resource);
-	return sectionHtml(resource, title, `
-		<div class="resource-crud-layout">
-			${resourceFormHtml(resource)}
+	if (resource === "users") {
+		return sectionHtml(resource, title, `
 			<div class="table-scroll">
 				${tableHtml(headers, [`<tr><td colspan="${headers.length}">Chargement...</td></tr>`]).replace("<tbody>", `<tbody data-admin-resource-body="${resource}">`)}
 			</div>
+		`);
+	}
+	return sectionHtml(resource, title, `
+		${resourceToolbarHtml(resource)}
+		<div class="table-scroll">
+			${tableHtml(headers, [`<tr><td colspan="${headers.length}">Chargement...</td></tr>`]).replace("<tbody>", `<tbody data-admin-resource-body="${resource}">`)}
 		</div>
 	`);
 }
@@ -446,6 +490,47 @@ async function loadResourceSelectOptions(resource) {
 	} catch (error) {
 		select.innerHTML = `<option value="">Erreur de chargement</option>`;
 	}
+}
+
+function setupAdminResourceActions(resource) {
+	document.addEventListener("click", async (event) => {
+		const editButton = event.target.closest("[data-edit-resource]");
+		if (editButton && editButton.dataset.editResource === resource && resource === "users") {
+			const name = window.prompt("Nom complet", editButton.dataset.name || "");
+			if (name === null) return;
+			const email = window.prompt("Email", editButton.dataset.email || "");
+			if (email === null) return;
+			const role = window.prompt("Rôle", editButton.dataset.role || "");
+			if (role === null) return;
+			try {
+				await window.EducInspectApi.updateAdminUser(editButton.dataset.id, {
+					name,
+					email,
+					role
+				});
+				await loadAdminResourceRows(resource);
+			} catch (error) {
+				window.alert(error.message || "Erreur pendant la modification.");
+			}
+			return;
+		}
+
+		const deleteButton = event.target.closest("[data-delete-resource]");
+		if (deleteButton && deleteButton.dataset.deleteResource === resource) {
+			const confirmed = window.confirm("Voulez-vous supprimer cet element ?");
+			if (!confirmed) return;
+			try {
+				if (resource === "users") {
+					await window.EducInspectApi.deleteAdminUser(deleteButton.dataset.id);
+				} else {
+					await window.EducInspectApi.deleteResource(resource, deleteButton.dataset.id);
+				}
+				await loadAdminResourceRows(resource);
+			} catch (error) {
+				window.alert(error.message || "Erreur pendant la suppression.");
+			}
+		}
+	});
 }
 
 function setupAdminResourceForm(resource) {
@@ -550,9 +635,26 @@ async function setupRoleDashboard() {
 
 	const resource = document.body.dataset.resource;
 	if (resource) {
+		setupAdminResourceActions(resource);
 		setupAdminResourceForm(resource);
+		setupResourceSearch(resource);
 		await loadAdminResourceRows(resource);
 	}
+}
+
+function setupResourceSearch(resource) {
+	const searchInput = document.querySelector(`[data-resource-search-input="${resource}"]`);
+	if (!searchInput) return;
+	searchInput.addEventListener("input", () => {
+		const query = searchInput.value.trim().toLowerCase();
+		const tableBody = document.querySelector(`[data-admin-resource-body="${resource}"]`);
+		if (!tableBody) return;
+		const rows = Array.from(tableBody.querySelectorAll("tr"));
+		rows.forEach((row) => {
+			const text = row.textContent.toLowerCase();
+			row.style.display = text.includes(query) ? "" : "none";
+		});
+	});
 }
 
 setupRoleDashboard();
