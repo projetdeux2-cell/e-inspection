@@ -10,12 +10,12 @@ function showLoginMessage(message, type = "info") {
 
 function dashboardForUser(user) {
 	const roles = (user?.roles || []).map((role) => role.name);
-	if (roles.includes("admin")) return "dashboards/admin.html";
-	if (roles.includes("directeur_departemental")) return "dashboards/direction.html";
-	if (roles.includes("inspecteur")) return "dashboards/inspecteur.html";
-	if (roles.includes("directeur_ecole")) return "dashboards/ecole.html";
-	if (roles.includes("enseignant")) return "dashboards/enseignant.html";
-	return "dashboards/inspecteur.html";
+	if (roles.includes("admin")) return "/e-inspection/eduleb/dashboards/admin.html";
+	if (roles.includes("directeur_departemental")) return "/e-inspection/eduleb/dashboards/direction.html";
+	if (roles.includes("inspecteur")) return "/e-inspection/eduleb/dashboards/inspecteur.html";
+	if (roles.includes("directeur_ecole")) return "/e-inspection/eduleb/dashboards/ecole.html";
+	if (roles.includes("enseignant")) return "/e-inspection/eduleb/dashboards/enseignant.html";
+	return "/e-inspection/eduleb/dashboards/inspecteur.html";
 }
 
 if (loginForm) {
@@ -33,7 +33,17 @@ if (loginForm) {
 			const payload = await window.EducInspectApi.login(emailInput.value, passwordInput.value);
 			window.EducInspectApi.setSession(payload);
 			showLoginMessage("Connexion reussie. Ouverture du tableau de bord...", "success");
-			window.location.href = dashboardForUser(payload.user);
+			let user = payload.user || null;
+			if (!user) {
+				try {
+					user = await window.EducInspectApi.me();
+				} catch (e) {
+					console.warn("Impossible de récupérer l'utilisateur après login:", e.message || e);
+				}
+			}
+			const target = dashboardForUser(user);
+			console.log("login payload:", payload, "resolved user:", user, "redirect:", target);
+			window.location.href = target;
 		} catch (error) {
 			showLoginMessage(error.message || "Connexion impossible. Verifiez le backend Laravel.", "error");
 		}

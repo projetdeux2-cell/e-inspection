@@ -4,7 +4,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Parametres - EducInspect</title>
+	<title>Modifier mon profil - EducInspect</title>
 	<link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
 	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 	<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
@@ -15,8 +15,7 @@
 <body data-required-role="admin">
 	<div class="app-shell">
 		<aside class="sidebar">
-			<a class="brand" href="../index.html"><img src="../assets/img/logo.png"
-					alt="EducInspect"><span>EducInspect</span></a>
+			<a class="brand" href="../index.html"><img src="../assets/img/logo.png" alt="EducInspect"><span>EducInspect</span></a>
 			<div class="profile">
 				<div class="avatar">AD</div>
 				<div><strong data-user-name>Administrateur</strong>
@@ -38,48 +37,51 @@
 		<main class="main">
 			<header class="topbar">
 				<button class="menu-btn" type="button"><span class="ti-menu"></span></button>
-				<div class="search"><span class="ti-search"></span><input data-dashboard-search type="search"
-						placeholder="Rechercher dans la plateforme..."></div>
-				<div class="top-actions"><button class="icon-btn" type="button"><span
-							class="ti-bell"></span><em>0</em></button>
+				<div class="search"><span class="ti-search"></span><input data-dashboard-search type="search" placeholder="Rechercher dans la plateforme..."></div>
+				<div class="top-actions"><button class="icon-btn" type="button"><span class="ti-bell"></span><em>0</em></button>
 					<div class="user-menu"><span class="ti-user"></span> <span data-user-role>Admin</span></div>
 				</div>
 			</header>
 			<section class="dashboard-head">
 				<div>
 					<p class="eyebrow">Administration generale</p>
-					<h1>Parametres du compte</h1>
-					<p>Accédez à la gestion de votre profil administrateur et ajustez vos informations de compte.</p>
+					<h1>Modifier mon profil</h1>
+					<p>Mettez à jour vos informations de compte administrateur et votre mot de passe en toute sécurité.</p>
 				</div>
 			</section>
 			<section class="workspace-grid">
 				<div class="panel form-panel">
 					<div class="panel-head">
-						<h2>Mon profil</h2><span class="legend">Compte administrateur</span>
+						<h2>Profil administrateur</h2><span class="legend">Compte actif</span>
 					</div>
-					<div class="mission">
-						<strong>Informations du compte</strong>
-						<p>Votre profil est géré dans un parcours dédié, sans formulaire intégré dans cette section.</p>
-					</div>
-					<div class="form-actions">
-						<a class="primary-action" href="admin-profile.html">Modifier mon profil</a>
-					</div>
+					<form class="app-form" data-profile-form>
+						<label>Nom complet
+							<input name="name" type="text" placeholder="Nom complet" required>
+						</label>
+						<label>Email
+							<input name="email" type="email" placeholder="Email" required>
+						</label>
+						<label>Nouveau mot de passe
+							<input name="password" type="password" placeholder="Laisser vide pour conserver l'actuel">
+						</label>
+						<div class="form-actions">
+							<button class="primary-action" type="submit">Enregistrer mon profil</button>
+							<button class="secondary-action" type="reset">Annuler</button>
+						</div>
+						<p class="form-message" data-profile-message></p>
+					</form>
 				</div>
 				<div class="panel table-panel">
 					<div class="panel-head">
-						<h2>Actions disponibles</h2><span class="legend">Configuration</span>
+						<h2>Informations du compte</h2><span class="legend">Sécurité</span>
 					</div>
 					<div class="mission">
-						<strong>Modifier mon profil</strong>
-						<p>Ouvrez la page de modification pour changer le nom, l'email et le mot de passe.</p>
+						<strong>Accès administrateur</strong>
+						<p>Ce profil contrôle les permissions de la plateforme et la configuration globale.</p>
 					</div>
 					<div class="mission">
-						<strong>Gerer les comptes</strong>
-						<p>Ajouter, modifier et supprimer les utilisateurs depuis l'espace gestion.</p>
-					</div>
-					<div class="mission">
-						<strong>Parametrer les referentiels</strong>
-						<p>Mettre à jour les departements, communes, ecoles et inspecteurs.</p>
+						<strong>Vérification de l’identité</strong>
+						<p>Le compte actif est déjà authentifié sur l’application et peut être mis à jour en temps réel.</p>
 					</div>
 				</div>
 			</section>

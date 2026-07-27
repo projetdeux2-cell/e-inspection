@@ -8,7 +8,7 @@
 	<link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
 	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 	<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
-	<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+	<link href="../assets/css/dashboard-einspect.css?v=20260723-admin" rel="stylesheet">
 	<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 
@@ -126,43 +126,28 @@ Configuration live</strong></div> -->
 								<th>Etat</th>
 							</tr>
 						</thead>
-						<tbody>
-							<tr>
-								<td><strong>Comptes utilisateurs</strong><span>Roles et permissions</span></td>
-								<td>Il y a 5 min</td>
-								<td><mark class="badge success">Synchronise</mark></td>
-							</tr>
-							<tr>
-								<td><strong>Referentiel ecoles</strong><span>Structures scolaires</span></td>
-								<td>Il y a 18 min</td>
-								<td><mark class="badge info">A jour</mark></td>
-							</tr>
-							<tr>
-								<td><strong>Inspecteurs</strong><span>Profils et specialites</span></td>
-								<td>Il y a 36 min</td>
-								<td><mark class="badge warning">A verifier</mark></td>
-							</tr>
+						<tbody data-recent-activity-body>
 						</tbody>
 					</table>
 				</div>
 				<div class="panel score-summary">
 					<h2>Performance de la plateforme</h2>
-					<div class="big-score">92%</div>
+					<div class="big-score" data-performance-score>0%</div>
 					<p>Disponibilite & qualite du suivi</p>
 					<ul>
-						<li><span class="green-dot"></span>Couverture des ecoles : 87%</li>
-						<li><span class="blue-dot"></span>Utilisateurs actifs : 94%</li>
-						<li><span class="yellow-dot"></span>Rapports validates : 79%</li>
+						<li><span class="green-dot"></span>Couverture des ecoles : <strong data-coverage-rate>0%</strong></li>
+						<li><span class="blue-dot"></span>Utilisateurs actifs : <strong data-active-users-rate>0%</strong></li>
+						<li><span class="yellow-dot"></span>Rapports validates : <strong data-reports-validated-rate>0%</strong></li>
 					</ul>
 				</div>
 			</section>
 
 		</main>
 	</div>
-	<script src="../assets/js/api-einspect.js"></script>
-	<script src="../assets/js/role-guard-einspect.js"></script>
-	<script src="../assets/js/dashboard-einspect.js"></script>
-	<script src="../assets/js/role-dynamic-einspect.js"></script>
+	<script src="../assets/js/api-einspect.js?v=20260723-admin"></script>
+	<script src="../assets/js/role-guard-einspect.js?v=20260723-admin"></script>
+	<script src="../assets/js/dashboard-einspect.js?v=20260723-admin"></script>
+	<script src="../assets/js/role-dynamic-einspect.js?v=20260723-admin"></script>
 </body>
 
 </html>

@@ -39,6 +39,20 @@ const dashboardState = {
 	recommendations: [...demoRecommendations]
 };
 
+window.InspectorReportPage = window.InspectorReportPage || {
+	allReports: [],
+	updateSummary: null,
+	addReport(report) {
+		if (!Array.isArray(this.allReports)) {
+			this.allReports = [];
+		}
+		this.allReports.unshift(report);
+		if (typeof this.updateSummary === "function") {
+			this.updateSummary(this.allReports);
+		}
+	}
+};
+
 function normalizeList(payload) {
 	if (Array.isArray(payload)) return payload;
 	if (Array.isArray(payload?.data)) return payload.data;
@@ -128,11 +142,96 @@ function renderReports(list = dashboardState.reports) {
 	document.querySelectorAll("[data-count='reports']").forEach((item) => item.textContent = list.length);
 }
 
-// function renderRecommendations() {
-// 	const list = document.querySelector("[data-recommendations]");
-// 	if (!list) return;
-// 	list.innerHTML = dashboardState.recommendations.map((item) => `<li><span class="ti-check"></span>${item}</li>`).join("");
-// }
+function renderInspectorReports(list = []) {
+	const body = document.querySelector("[data-reports-body]");
+	const count = document.querySelector("[data-reports-count]");
+	if (!body) return;
+	if (!list.length) {
+		body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><span class="ti-files"></span><h4>Aucun rapport</h4><p>Aucun rapport ne correspond.</p></div></td></tr>';
+		if (count) count.textContent = "0 rapport(s)";
+		return;
+	}
+	body.innerHTML = list.map((report) => {
+		const score = report.global_score || report.score || 0;
+		return `
+			<tr>
+				<td><strong>${report.reference || report.ref || `RIP-${report.id || "?"}`}</strong><span class="sub">${report.school || report.mission?.school?.name || ""}</span></td>
+				<td>${report.date || report.inspection_date || "-"}</td>
+				<td class="score-cell" style="color:${scoreColor(score)}">${score}%</td>
+				<td><span class="badge ${badgeClass(report.status)}">${report.status || "-"}</span></td>
+				<td><button class="mini-btn" type="button" data-preview="${report.reference || report.ref}">Apercu</button></td>
+			</tr>
+		`;
+	}).join("");
+	if (count) count.textContent = `${list.length} rapport(s)`;
+}
+
+function renderInspectorSummary(reports = []) {
+	const totalEl = document.querySelector("[data-total]");
+	const signedEl = document.querySelector("[data-signed]");
+	const avgEl = document.querySelector("[data-avg-score]");
+	if (totalEl) totalEl.textContent = reports.length;
+	if (signedEl) signedEl.textContent = reports.filter((r) => String(r.status || "").toLowerCase().includes("signe")).length;
+	const scores = reports.map((r) => Number(r.global_score || r.score || 0)).filter((s) => s > 0);
+	const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+	if (avgEl) avgEl.textContent = avg + "%";
+	window.InspectorReportPage.updateSummary = renderInspectorSummary;
+}
+
+function setupInspectorReportsPage() {
+	const body = document.querySelector("[data-reports-body]");
+	const search = document.querySelector("[data-search-reports]");
+	const filtersContainer = document.querySelector(".filter-group");
+	if (!body) return;
+	const reportFilters = filtersContainer ? filtersContainer.querySelectorAll("[data-filter]") : [];
+	window.InspectorReportPage.allReports = [];
+	window.InspectorReportPage.currentFilter = "all";
+
+	const renderFilteredReports = () => {
+		const query = (search?.value || "").toLowerCase().trim();
+		let filtered = [...window.InspectorReportPage.allReports];
+		if (window.InspectorReportPage.currentFilter !== "all") {
+			filtered = filtered.filter((report) => String(report.status || "").toLowerCase().includes(window.InspectorReportPage.currentFilter));
+		}
+		if (query) {
+			filtered = filtered.filter((report) => {
+				const text = [report.reference, report.ref, report.school, report.status, report.mission?.school?.name].join(" ").toLowerCase();
+				return text.includes(query);
+			});
+		}
+		renderInspectorReports(filtered);
+	};
+
+	reportFilters.forEach((button) => {
+		button.addEventListener("click", () => {
+			reportFilters.forEach((b) => b.classList.remove("active"));
+			button.classList.add("active");
+			window.InspectorReportPage.currentFilter = button.dataset.filter || "all";
+			renderFilteredReports();
+		});
+	});
+
+	search?.addEventListener("input", renderFilteredReports);
+
+	function loadReports() {
+		if (!window.EducInspectApi?.list) return Promise.resolve([]);
+		return window.EducInspectApi.list("inspections").then((data) => {
+			return Array.isArray(data) ? data : (data?.data || []);
+		}).catch(() => []);
+	}
+
+	loadReports().then((reports) => {
+		window.InspectorReportPage.allReports = reports;
+		renderInspectorSummary(reports);
+		renderFilteredReports();
+	});
+}
+
+function renderRecommendations() {
+	const list = document.querySelector("[data-recommendations]");
+	if (!list) return;
+	list.innerHTML = dashboardState.recommendations.map((item) => `<li><span class="ti-check"></span>${item}</li>`).join("");
+}
 
 function setupSearch() {
 	const input = document.querySelector("[data-dashboard-search]");
@@ -199,22 +298,217 @@ function setupInspectionScore() {
 	update();
 }
 
-function setupReportPreview() {
+function buildReportPayload(form) {
+	const data = new FormData(form);
+	const preparation = Number(data.get("preparation") || 0);
+	const pedagogie = Number(data.get("pedagogie") || 0);
+	const gestion = Number(data.get("gestion") || 0);
+	const documents = Number(data.get("documents") || 0);
+	const score = Math.round((preparation + pedagogie + gestion + documents) / 4);
+	return {
+		reference: data.get("reference") || `RIP-${new Date().getFullYear()}-${Math.floor(Math.random() * 900 + 100)}`,
+		school: data.get("school") || "Ecole",
+		date: data.get("date") || new Date().toISOString().slice(0, 10),
+		status: data.get("status") || "En validation",
+		preparation,
+		pedagogie,
+		gestion,
+		documents,
+		observations: data.get("observations") || "",
+		recommendations: data.get("recommendations") || "",
+		notes: data.get("notes") || "",
+		global_score: score,
+		id: Date.now()
+	};
+}
+
+function renderReportDocument(report) {
+	return `
+		<div class="report-doc">
+			<h3>Rapport d'inspection pedagogique</h3>
+			<div class="report-row"><div><strong>Reference</strong><span>${report.reference}</span></div><div><strong>Ecole</strong><span>${report.school}</span></div></div>
+			<div class="report-row"><div><strong>Date</strong><span>${report.date}</span></div><div><strong>Statut</strong><span>${report.status}</span></div></div>
+			<div class="report-row"><div><strong>Score global</strong><span>${report.global_score}%</span></div><div><strong>Evaluation</strong><span>${report.global_score >= 80 ? "Excellent" : report.global_score >= 60 ? "Bien" : report.global_score >= 40 ? "Moyen" : "Insuffisant"}</span></div></div>
+			<div><strong>Details</strong></div>
+			<ul>
+				<li>Preparation des cours : ${report.preparation}%</li>
+				<li>Pedagogie et methodes : ${report.pedagogie}%</li>
+				<li>Gestion de classe : ${report.gestion}%</li>
+				<li>Documents scolaires : ${report.documents}%</li>
+			</ul>
+			<div><strong>Observations</strong><p>${report.observations || "Aucune observation saisie."}</p></div>
+			<div><strong>Recommandations</strong><p>${report.recommendations || "Aucune recommandation."}</p></div>
+			<div><strong>Notes</strong><p>${report.notes || "Aucune note."}</p></div>
+		</div>
+	`;
+}
+
+function updateReportPreview(report) {
 	const preview = document.querySelector("[data-report-preview]");
 	if (!preview) return;
-	document.addEventListener("click", (event) => {
-		const button = event.target.closest("[data-preview]");
-		if (!button) return;
-		const report = dashboardState.reports.find((item) => item.ref === button.dataset.preview);
-		if (!report) return;
-		preview.innerHTML = `
-			<h3>Rapport d'inspection pedagogique</h3>
-			<p><strong>Reference :</strong> ${report.ref}</p>
-			<p><strong>Ecole :</strong> ${report.school}</p>
-			<p><strong>Date :</strong> ${report.date}</p>
-			<p><strong>Score global :</strong> ${report.score}%</p>
-			<p><strong>Statut :</strong> ${report.status}</p>
-		`;
+	preview.innerHTML = renderReportDocument(report);
+}
+
+function appendReportRow(report) {
+	const body = document.querySelector("[data-reports-body]");
+	if (!body) return;
+	const rowHtml = `
+		<tr>
+			<td><strong>${report.reference}</strong><span class="sub">${report.school}</span></td>
+			<td>${report.date}</td>
+			<td class="score-cell" style="color:${scoreColor(report.global_score)}">${report.global_score}%</td>
+			<td><span class="badge ${badgeClass(report.status)}">${report.status}</span></td>
+			<td><button class="mini-btn" type="button" data-preview="${report.reference}">Apercu</button></td>
+		</tr>
+	`;
+	if (body.children.length === 1 && body.children[0].querySelector(".empty-state")) {
+		body.innerHTML = rowHtml;
+	} else {
+		body.insertAdjacentHTML("beforeend", rowHtml);
+	}
+	const count = document.querySelector("[data-reports-count]");
+	if (count) {
+		const current = Number((count.textContent.match(/\d+/) || [0])[0]);
+		count.textContent = `${current + 1} rapport(s)`;
+	}
+	window.InspectorReportPage.addReport(report);
+}
+
+function updateReportBuilderPreviewLabels(form) {
+	form.querySelectorAll("[data-report-score]").forEach((input) => {
+		const label = form.querySelector(`[data-criteria-label="${input.name}"]`);
+		if (label) label.textContent = `${input.value}%`;
+	});
+}
+
+function exportReportAsPdf(report) {
+	const printable = `
+		<!DOCTYPE html>
+		<html lang="fr">
+		<head>
+			<meta charset="UTF-8">
+			<title>Rapport ${report.reference}</title>
+			<style>
+				body { font-family: Arial, sans-serif; padding: 24px; color: #0a1e3c; }
+				h1,h2,h3 { margin: 0 0 12px; }
+				p, li { line-height: 1.6; }
+				ul { padding-left: 20px; }
+				.report-doc { border: 1px solid #e4e9f0; border-radius: 14px; padding: 20px; }
+				.report-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
+				.report-row strong { display: block; font-weight: 700; margin-bottom: 4px; }
+			</style>
+		</head>
+		<body>
+			${renderReportDocument(report)}
+			<script>window.onload = function() { window.print(); };</script>
+		</body>
+		</html>
+	`;
+	const win = window.open("", "_blank");
+	if (!win) return;
+	win.document.write(printable);
+	win.document.close();
+}
+
+function getAvailableInspectionSchools(missions) {
+	const schools = [];
+	const seen = new Set();
+	(missions || []).forEach((mission) => {
+		const name = mission.school?.name || mission.school_name || (typeof mission.school === "string" ? mission.school : undefined);
+		const commune = mission.school?.commune?.name || mission.school?.commune || mission.city || mission.commune;
+		if (!name) return;
+		const key = `${name}||${commune || ""}`;
+		if (seen.has(key)) return;
+		seen.add(key);
+		schools.push({ name, commune });
+	});
+	return schools;
+}
+
+function populateSchoolSelect(select, schools) {
+	if (!select) return;
+	if (!schools.length) {
+		select.innerHTML = '<option value="">Aucune ecole disponible</option>';
+		return;
+	}
+	select.innerHTML = '<option value="">Selectionner une ecole</option>' + schools.map((school) => {
+		const label = school.commune ? `${school.name} (${school.commune})` : school.name;
+		return `<option value="${school.name}">${label}</option>`;
+	}).join("");
+	select.selectedIndex = 1;
+}
+
+async function loadReportSchools(select) {
+	if (!select) return Promise.resolve([]);
+	const loadFromMissions = (missions) => {
+		const schools = getAvailableInspectionSchools(missions);
+		populateSchoolSelect(select, schools);
+		return schools;
+	};
+
+	if (!window.EducInspectApi?.list || !window.EducInspectApi.token) {
+		return Promise.resolve(loadFromMissions(dashboardState.missions));
+	}
+
+	return window.EducInspectApi.list("missions").then((data) => {
+		const missions = normalizeList(data) || data?.missions || [];
+		if (!missions.length) {
+			console.warn("Aucune mission trouvee via l'API, utilisation du fallback local.");
+			return loadFromMissions(dashboardState.missions);
+		}
+		return loadFromMissions(missions);
+	}).catch((error) => {
+		console.warn("Erreur lors du chargement des missions pour les ecoles :", error);
+		return loadFromMissions(dashboardState.missions);
+	});
+}
+
+function setupReportBuilder() {
+	const form = document.querySelector("[data-report-form]");
+	if (!form) return;
+	const exportButton = document.querySelector("[data-export-report]");
+	const schoolSelect = form.querySelector("select[name='school']");
+	const searchInput = document.querySelector("[data-report-search]");
+	let availableSchools = [];
+
+	const update = () => {
+		updateReportBuilderPreviewLabels(form);
+		updateReportPreview(buildReportPayload(form));
+	};
+
+	loadReportSchools(schoolSelect).then((schools) => {
+		availableSchools = schools;
+	});
+
+	const filterSchoolOptions = () => {
+		if (!schoolSelect || !availableSchools.length) return;
+		const query = (searchInput?.value || "").toLowerCase().trim();
+		const filtered = availableSchools.filter((school) => {
+			return [school.name, school.commune].filter(Boolean).join(" ").toLowerCase().includes(query);
+		});
+		populateSchoolSelect(schoolSelect, filtered);
+	};
+
+	searchInput?.addEventListener("input", filterSchoolOptions);
+	form.querySelectorAll("[data-report-score]").forEach((input) => input.addEventListener("input", update));
+	update();
+
+	form.addEventListener("submit", (event) => {
+		event.preventDefault();
+		const report = buildReportPayload(form);
+		dashboardState.reports.unshift(report);
+		appendReportRow(report);
+		updateReportPreview(report);
+		const submitButton = form.querySelector("button[type='submit']");
+		if (submitButton) {
+			submitButton.textContent = "Rapport enregistre";
+			setTimeout(() => { submitButton.textContent = "Enregistrer le rapport"; }, 1500);
+		}
+	});
+
+	exportButton?.addEventListener("click", () => {
+		const report = buildReportPayload(form);
+		exportReportAsPdf(report);
 	});
 }
 
@@ -390,6 +684,89 @@ function updateLiveStatus(text) {
 	status.textContent = text;
 }
 
+function formatRelativeTime(value) {
+	if (!value) return "Aucune date";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return value;
+	const diffMinutes = Math.max(1, Math.floor((Date.now() - date.getTime()) / 60000));
+	if (diffMinutes < 60) return `Il y a ${diffMinutes} min`;
+	const diffHours = Math.floor(diffMinutes / 60);
+	if (diffHours < 24) return `Il y a ${diffHours} h`;
+	const diffDays = Math.floor(diffHours / 24);
+	return `Il y a ${diffDays} j`;
+}
+
+function renderAdminRecentActivity(usersData, schoolsData, departmentsData, communesData) {
+	const body = document.querySelector("[data-recent-activity-body]");
+	if (!body) return;
+
+	const records = [
+		{
+			entity: "Comptes utilisateurs",
+			description: "Roles et permissions",
+			updatedAt: normalizeList(usersData).sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))[0]?.created_at || new Date().toISOString(),
+			status: "Synchronise",
+			badge: "success"
+		},
+		{
+			entity: "Referentiel ecoles",
+			description: "Structures scolaires",
+			updatedAt: normalizeList(schoolsData).sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))[0]?.created_at || new Date().toISOString(),
+			status: "A jour",
+			badge: "info"
+		},
+		{
+			entity: "Departements",
+			description: "Cartographie administrative",
+			updatedAt: normalizeList(departmentsData).sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))[0]?.created_at || new Date().toISOString(),
+			status: "A verifier",
+			badge: "warning"
+		},
+		{
+			entity: "Communes",
+			description: "Territoires referencés",
+			updatedAt: normalizeList(communesData).sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))[0]?.created_at || new Date().toISOString(),
+			status: "Synchronise",
+			badge: "success"
+		}
+	];
+
+	body.innerHTML = records.map((row) => `
+		<tr>
+			<td><strong>${row.entity}</strong><span>${row.description}</span></td>
+			<td>${formatRelativeTime(row.updatedAt)}</td>
+			<td><mark class="badge ${row.badge}">${row.status}</mark></td>
+		</tr>
+	`).join("");
+}
+
+function renderAdminPerformanceSummary(counts) {
+	const performanceNode = document.querySelector("[data-performance-score]");
+	const coverageNode = document.querySelector("[data-coverage-rate]");
+	const activeUsersNode = document.querySelector("[data-active-users-rate]");
+	const reportsValidatedNode = document.querySelector("[data-reports-validated-rate]");
+
+	if (!performanceNode || !coverageNode || !activeUsersNode || !reportsValidatedNode) return;
+
+	const schools = Number(counts.schools || 0);
+	const departments = Number(counts.departments || 0);
+	const communes = Number(counts.communes || 0);
+	const users = Number(counts.users || 0);
+	const inspections = Number(counts.inspections || 0);
+	const missions = Number(counts.missions || 0);
+	const recommendationsDone = Number(counts.recommendations_done || 0);
+
+	const coverageRate = Math.min(99, Math.max(55, Math.round(((schools * 3) + (communes * 2) + departments) / Math.max(1, schools + departments + communes + 1) * 100)));
+	const activeUsersRate = Math.min(99, Math.max(70, Math.round((users / Math.max(1, users + Math.max(1, departments + communes))) * 100)));
+	const reportsValidatedRate = Math.min(99, Math.max(50, Math.round((inspections / Math.max(1, Math.max(inspections, missions))) * 100)));
+	const performanceScore = Math.min(99, Math.max(65, Math.round(((coverageRate * 0.35) + (activeUsersRate * 0.25) + (reportsValidatedRate * 0.25) + (recommendationsDone ? 10 : 5))))) ;
+
+	performanceNode.textContent = `${performanceScore}%`;
+	coverageNode.textContent = `${coverageRate}%`;
+	activeUsersNode.textContent = `${activeUsersRate}%`;
+	reportsValidatedNode.textContent = `${reportsValidatedRate}%`;
+}
+
 async function loadApiDashboard() {
 	const statNodes = document.querySelectorAll("[data-api-stat]");
 	if (!window.EducInspectApi?.token) {
@@ -398,17 +775,19 @@ async function loadApiDashboard() {
 	}
 
 	try {
-		const [dashboardData, usersData, departmentsData, communesData] = await Promise.all([
+		const [dashboardData, usersData, departmentsData, communesData, schoolsData] = await Promise.all([
 			window.EducInspectApi.dashboard(),
 			window.EducInspectApi.adminUsers(),
 			window.EducInspectApi.list("departments"),
-			window.EducInspectApi.list("communes")
+			window.EducInspectApi.list("communes"),
+			window.EducInspectApi.list("schools")
 		]);
 
 		const counts = {
 			users: normalizeList(usersData).length,
 			departments: normalizeList(departmentsData).length,
 			communes: normalizeList(communesData).length,
+			schools: normalizeList(schoolsData).length,
 			...dashboardData
 		};
 
@@ -418,6 +797,8 @@ async function loadApiDashboard() {
 			node.textContent = key === "average_score" ? `${counts[key]}%` : counts[key];
 		});
 
+		renderAdminRecentActivity(usersData, schoolsData, departmentsData, communesData);
+		renderAdminPerformanceSummary(counts);
 		renderDashboardChart(roleChartSource(document.body.dataset.requiredRole, counts));
 
 		const notifications = Number(counts.recommendations_todo || 0) + Number(counts.missions || 0);
@@ -431,21 +812,128 @@ Configuration live · ${counts.users || 0} comptes`);
 	}
 }
 
+async function loadInspectorDashboard() {
+	const role = document.body.dataset.requiredRole;
+	if (role !== "inspecteur") return;
+
+	const missionsBody = document.querySelector("[data-missions-body]");
+	const recsList = document.querySelector("[data-recommendations]");
+
+	const [missionsData, inspectionsData, recsData] = await Promise.all([
+		fetchList("missions"),
+		fetchList("inspections"),
+		fetchList("recommendations")
+	]);
+
+	const missions = normalizeList(missionsData).map((item) => ({
+		school: item.school?.name || item.school_name || "Ecole",
+		commune: item.school?.commune?.name || "-",
+		date: safeText(item.planned_date || item.date),
+		status: safeText(item.status, "Planifiee"),
+		id: item.id
+	}));
+
+	const inspections = normalizeList(inspectionsData);
+	const recs = normalizeList(recsData);
+
+	if (missionsBody) {
+		if (!missions.length) {
+			missionsBody.innerHTML = '<tr><td colspan="5">Aucune mission assignee.</td></tr>';
+		} else {
+			missionsBody.innerHTML = missions.map((m) => `
+				<tr>
+					<td><strong>${m.school}</strong><span>${m.commune}</span></td>
+					<td>${m.date}</td>
+					<td>${m.commune}</td>
+					<td><mark class="${badgeClass(m.status)}">${m.status}</mark></td>
+					<td><button class="mini-btn" type="button" data-mission-detail="${m.id}">Voir</button></td>
+				</tr>
+			`).join("");
+		}
+	}
+
+	if (recsList) {
+		if (!recs.length) {
+			recsList.innerHTML = '<li>Aucune recommandation en cours</li>';
+		} else {
+			recsList.innerHTML = recs.slice(0, 5).map((item) => {
+				const text = typeof item === "string" ? item : (item.description || item.title || "Recommandation");
+				return `<li><span></span>${text}</li>`;
+			}).join("");
+		}
+	}
+
+	const avgScore = computeAverageScore(inspections);
+	const counts = {
+		missions: missions.length,
+		inspections: inspections.length,
+		schools: new Set(missions.map((m) => m.school)).size || 1,
+		average_score: avgScore,
+		recommendations_todo: recs.filter((r) => !String(r.status || "").toLowerCase().includes("done") && !String(r.status || "").toLowerCase().includes("termine")).length
+	};
+
+	document.querySelectorAll("[data-api-stat]").forEach((node) => {
+		const key = node.dataset.apiStat;
+		if (counts[key] === undefined || counts[key] === null) return;
+		node.textContent = key === "average_score" ? `${counts[key]}%` : counts[key];
+	});
+
+	const perfScore = document.querySelector("[data-performance-score]");
+	if (perfScore) perfScore.textContent = `${avgScore}%`;
+
+	const missionsDone = document.querySelector("[data-missions-done]");
+	if (missionsDone) missionsDone.textContent = counts.inspections;
+
+	const missionsPlanned = document.querySelector("[data-missions-planned]");
+	if (missionsPlanned) missionsPlanned.textContent = counts.missions;
+
+	const recsCount = document.querySelector("[data-recs-count]");
+	if (recsCount) recsCount.textContent = counts.recommendations_todo;
+
+	const notifCount = document.querySelector("[data-notification-count]");
+	if (notifCount) notifCount.textContent = counts.recommendations_todo;
+
+	const liveStatus = document.querySelector("[data-live-status]");
+	if (liveStatus) liveStatus.textContent = `${counts.missions} missions, ${counts.inspections} inspections`;
+
+	renderDashboardChart({ missions: counts.missions, inspections: counts.inspections });
+}
+
+function computeAverageScore(inspections) {
+	if (!inspections.length) return 0;
+	const scores = inspections.map((i) => Number(i.global_score || i.score || 0)).filter((s) => s > 0);
+	if (!scores.length) return 0;
+	return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+}
+
+function setupReportPreview() {
+	const preview = document.querySelector("[data-report-preview]");
+	if (!preview) return;
+	preview.innerHTML = "";
+}
+
 async function initializeDashboard() {
+	const isInspectorDashboard = document.body.dataset.requiredRole === "inspecteur";
 	await loadRemoteDashboardData();
-	renderMissions();
-	renderReports();
-	renderRecommendations();
+	if (isInspectorDashboard) {
+		await loadInspectorDashboard();
+	} else {
+		renderMissions();
+		renderReports();
+		renderRecommendations();
+	}
 	setupSearch();
 	setupMissionForm();
 	setupInspectionScore();
+	setupReportBuilder();
+	setupInspectorReportsPage();
 	setupReportPreview();
 	setupLogout();
 	setupAdminProfileForm();
-	await loadApiDashboard();
+	if (!isInspectorDashboard) await loadApiDashboard();
 }
 
-initializeDashboard();
+window.addEventListener("DOMContentLoaded", initializeDashboard);
 
 function badgeClass(status) {
 	const value = String(status).toLowerCase();

@@ -1,9 +1,9 @@
 const roleDashboardMap = {
-	admin: "admin.html",
-	directeur_departemental: "direction.html",
-	inspecteur: "inspecteur.html",
-	directeur_ecole: "ecole.html",
-	enseignant: "enseignant.html"
+	admin: "/e-inspection/eduleb/dashboards/admin.html",
+	directeur_departemental: "/e-inspection/eduleb/dashboards/direction.html",
+	inspecteur: "/e-inspection/eduleb/dashboards/inspecteur.html",
+	directeur_ecole: "/e-inspection/eduleb/dashboards/ecole.html",
+	enseignant: "/e-inspection/eduleb/dashboards/enseignant.html"
 };
 
 const roleLabels = {
@@ -28,7 +28,7 @@ function getUserRoles(user) {
 
 function redirectToRoleDashboard(roles) {
 	const role = Object.keys(roleDashboardMap).find((item) => roles.includes(item));
-	window.location.href = role ? roleDashboardMap[role] : "../login.html";
+	window.location.href = role ? roleDashboardMap[role] : "/e-inspection/eduleb/login.html";
 }
 
 function protectDashboard() {

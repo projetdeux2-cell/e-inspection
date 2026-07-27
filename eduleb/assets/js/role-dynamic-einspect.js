@@ -222,26 +222,26 @@ function fixMenuLinks(role) {
 			"Deconnexion": "deconnexion.html"
 		},
 		directeur_departemental: {
-			"Calendrier": "calendrier-direction",
-			"Rapports a valider": "rapports-direction",
-			"Statistiques": "statistiques",
-			"Recommandations": "recommandations"
+			"Calendrier": "calendrier-direction.html",
+			"Rapports a valider": "rapports-direction.html",
+			"Statistiques": "statistiques.html",
+			"Recommandations": "recommandations.html"
 		},
 		inspecteur: {
-			"Missions": "missions-inspecteur",
-			"Calendrier": "calendrier-inspecteur",
-			"Fiches": "fiches-inspecteur",
-			"Rapports": "rapports-inspecteur"
+			"Missions": "missions-inspecteur.html",
+			"Calendrier": "calendrier-inspecteur.html",
+			"Fiches": "fiches-inspecteur.html",
+			"Rapports": "rapports-inspecteur.html"
 		},
 		directeur_ecole: {
-			"Rapports": "rapports-ecole",
-			"Plan d'action": "plan-daction",
-			"Observations": "observations"
+			"Rapports": "rapports-ecole.html",
+			"Plan d'action": "plan-daction.html",
+			"Observations": "observations.html"
 		},
 		enseignant: {
-			"Rapports": "rapports-enseignant",
-			"Observations": "observations",
-			"Actions pedagogiques": "actions-pedagogiques"
+			"Rapports": "rapports-enseignant.html",
+			"Observations": "observations.html",
+			"Actions pedagogiques": "actions-pedagogiques.html"
 		}
 	};
 
@@ -249,6 +249,19 @@ function fixMenuLinks(role) {
 	document.querySelectorAll(".side-nav a").forEach((link) => {
 		const text = link.textContent.trim();
 		if (links[text]) link.href = links[text];
+	});
+}
+
+function setActiveMenuItem() {
+	const currentPage = window.location.pathname.split("/").pop();
+	document.querySelectorAll(".side-nav a").forEach((link) => {
+		const href = link.getAttribute("href");
+		if (!href) return;
+		if (href === currentPage) {
+			link.classList.add("active");
+		} else {
+			link.classList.remove("active");
+		}
 	});
 }
 
@@ -528,6 +541,7 @@ async function setupRoleDashboard() {
 	if (!role || !main) return;
 
 	fixMenuLinks(role);
+	setActiveMenuItem();
 
 	let sections = [];
 	if (document.body.dataset.resource) {
