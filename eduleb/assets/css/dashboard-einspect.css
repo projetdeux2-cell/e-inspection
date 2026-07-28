@@ -999,7 +999,7 @@ grid-template-columns:1fr;
 
 .chart-panel{
 
-    min-height:420px;
+    min-height:auto;
 
 }
 

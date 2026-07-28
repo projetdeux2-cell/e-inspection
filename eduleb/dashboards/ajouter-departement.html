@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ajouter un département - EducInspect</title>
+    <link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
+    <link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/fonts/themify-icons.css" rel="stylesheet">
+    <link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        .form-container { max-width: 720px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #eef2f7; box-shadow: 0 2px 8px rgba(10, 30, 60, 0.04); padding: 32px 40px; }
+        .form-title { font-size: 24px; font-weight: 800; color: #0a1e3c; margin-bottom: 8px; }
+        .form-subtitle { font-size: 14px; color: #6b7a93; margin-bottom: 28px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 700; font-size: 14px; color: #1a2a4a; margin-bottom: 6px; }
+        .form-group label .required { color: #d14c4c; margin-left: 2px; }
+        .form-control { width: 100%; padding: 10px 16px; border: 1px solid #e4e9f0; border-radius: 12px; font-size: 14px; font-family: 'Mulish', sans-serif; background: #f8fafc; transition: border-color 0.2s, box-shadow 0.2s; color: #1a2a4a; }
+        .form-control:focus { outline: none; border-color: #2a6df4; box-shadow: 0 0 0 4px rgba(42, 109, 244, 0.10); background: #ffffff; }
+        .form-control::placeholder { color: #9aaec5; }
+        .form-actions { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+        .btn-primary, .btn-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 10px 28px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; font-family: 'Mulish', sans-serif; transition: background 0.2s, transform 0.1s, box-shadow 0.2s; }
+        .btn-primary { background: #2a6df4; color: #ffffff; border: none; box-shadow: 0 4px 12px rgba(42, 109, 244, 0.25); cursor: pointer; }
+        .btn-primary:hover { background: #1a5ad9; box-shadow: 0 6px 18px rgba(42, 109, 244, 0.35); transform: translateY(-1px); }
+        .btn-secondary { background: #f0f3f8; color: #1a2a4a; border: 1px solid #e4e9f0; cursor: pointer; }
+        .btn-secondary:hover { background: #e4e9f0; color: #0a1e3c; }
+        @media (max-width: 768px) { .form-container { padding: 24px 18px; } .form-title { font-size: 20px; } .form-actions { flex-direction: column; } .btn-primary, .btn-secondary { justify-content: center; width: 100%; } }
+    </style>
+</head>
+<body data-required-role="admin" data-resource="departments">
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" href="../index.html"><img src="../assets/img/logo.png" alt="EducInspect"><span>EducInspect</span></a>
+            <div class="profile"><div class="avatar">AD</div><div><strong data-user-name>Administrateur</strong><p data-user-role>Gestion centrale</p></div></div>
+            <nav class="side-nav">
+                <a href="admin.html"><span class="ti-dashboard"></span>Dashboard admin</a>
+                <a href="admin-utilisateurs.html"><span class="ti-user"></span>Utilisateurs</a>
+                <a class="active" href="admin-departements.html"><span class="ti-map-alt"></span>Departements</a>
+                <a href="admin-communes.html"><span class="ti-location-pin"></span>Communes</a>
+                <a href="admin-ecoles.html"><span class="ti-home"></span>Ecoles</a>
+                <a href="admin-inspecteurs.html"><span class="ti-id-badge"></span>Inspecteurs</a>
+                <a href="admin-parametres.html"><span class="ti-settings"></span>Parametres</a>
+                <a href="deconnexion.html"><span class="ti-power-off"></span>Deconnexion</a>
+            </nav>
+            <p class="copyright">&copy; 2026 EducInspect</p>
+        </aside>
+        <main class="main">
+            <section class="dashboard-head"><div><p class="eyebrow">Administration generale</p><h1>Ajouter un département</h1><p>Créez un nouveau département dans le référentiel.</p></div></section>
+            <section class="form-container">
+                <h2 class="form-title">Nouveau département</h2>
+                <p class="form-subtitle">Remplissez les informations du département.</p>
+                <form id="addDepartmentForm" novalidate>
+                    <div class="form-group"><label for="name">Nom du département <span class="required">*</span></label><input type="text" id="name" name="name" class="form-control" placeholder="Ex: Atlantique" required></div>
+                    <div class="form-group"><label for="code">Code <span class="required">*</span></label><input type="text" id="code" name="code" class="form-control" placeholder="Ex: AT" required></div>
+                    <div class="form-group"><label for="capital">Chef-lieu <span class="required">*</span></label><input type="text" id="capital" name="capital" class="form-control" placeholder="Ex: Abomey" required></div>
+                    <div class="form-actions"><button type="submit" class="btn-primary"><span class="ti-save"></span> Enregistrer</button><a href="admin-departements.html" class="btn-secondary"><span class="ti-close"></span> Annuler</a></div>
+                </form>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

@@ -333,25 +333,39 @@ function getResourceFields(resource) {
 }
 
 function resourceFormHtml(resource) {
-	const fields = getResourceFields(resource);
-	const fieldHtml = fields.map((field) => {
-		const required = field.required ? "required" : "";
-		if (field.type === "select") {
-			const options = field.options ? field.options.map((option) => `<option value="${option.value}">${option.text}</option>`).join("") : `<option value="">Chargement...</option>`;
-			return `<label>${field.label}<select name="${field.name}" ${required}>${options}</select></label>`;
-		}
-		return `<label>${field.label}<input name="${field.name}" type="${field.type}" ${required}></label>`;
-	}).join("");
+	const createUrls = {
+		users: "ajouter-utilisateur.html",
+		departments: "ajouter-departement.html",
+		communes: "ajouter-commune.html",
+		schools: "ajouter-ecole.html",
+		inspectors: "ajouter-inspecteur.html"
+	};
+
+	const createLabels = {
+		users: "utilisateur",
+		departments: "département",
+		communes: "commune",
+		schools: "école",
+		inspectors: "inspecteur"
+	};
+
+	const createArticles = {
+		users: "un",
+		departments: "un",
+		communes: "une",
+		schools: "une",
+		inspectors: "un"
+	};
+
+	const href = createUrls[resource] || "#";
+	const label = createLabels[resource] || resourceTitle(resource);
+	const article = createArticles[resource] || "un";
+
 	return `
-		<form class="app-form admin-resource-form" data-admin-resource-form="${resource}">
-			<input type="hidden" name="id">
-			${fieldHtml}
-			<div class="form-actions">
-				<button class="primary-action" type="submit">Enregistrer</button>
-				<button class="secondary-action" type="button" data-reset-resource-form>Annuler</button>
-			</div>
-			<p class="form-message" data-admin-resource-message></p>
-		</form>
+		<div class="resource-header">
+			<p>Utilisez le bouton ci-dessous pour accéder au formulaire de création de ${label}.</p>
+			<a class="mini-btn" href="${href}">Ajouter ${article} ${label}</a>
+		</div>
 	`;
 }
 
