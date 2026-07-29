@@ -10,6 +10,12 @@
 	<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
 	<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
 	<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+	<style>
+		.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;background:#2a6df4;color:#fff;font-weight:700;border-radius:10px;border:none;text-decoration:none;box-shadow:0 4px 12px rgba(42,109,244,0.18);} 
+		.btn-primary:hover{background:#1a5ad9;transform:translateY(-1px)}
+		@media(max-width:768px){.btn-primary{padding:8px 12px;font-size:14px}}
+	</style>
 </head>
 
 <body data-required-role="admin">
@@ -62,7 +68,7 @@
 						<p>Votre profil est géré dans un parcours dédié, sans formulaire intégré dans cette section.</p>
 					</div>
 					<div class="form-actions">
-						<a class="primary-action" href="admin-profile.html">Modifier mon profil</a>
+						<a class="btn-primary" href="admin-profile.html"><span class="ti-pencil"></span> Modifier mon profil</a>
 					</div>
 				</div>
 				<div class="panel table-panel">

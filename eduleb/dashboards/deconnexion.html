@@ -9,15 +9,32 @@
 		<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
 		<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
 		<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="../assets/css/connexion.css">
+
+		<style>
+			body.logout-elegant{font-family:'Mulish',sans-serif;background:linear-gradient(180deg,#f7fbff 0%,#ffffff 40%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px}
+			.logout-wrap{width:100%;max-width:680px}
+			.logout-card{background:#fff;padding:40px;border-radius:16px;box-shadow:0 12px 40px rgba(10,30,60,0.08);border:1px solid rgba(10,30,60,0.03);text-align:center}
+			.logout-icon{width:84px;height:84px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin:0 auto 18px;background:linear-gradient(135deg,rgba(42,109,244,0.14),rgba(42,109,244,0.06));color:#2a6df4;font-size:28px}
+			h1{margin:0 0 8px;color:#0a1e3c;font-size:22px}
+			.lead{color:#5f6f88;margin-bottom:20px}
+			.actions{display:flex;gap:12px;justify-content:center}
+			.btn-primary{display:inline-flex;align-items:center;gap:10px;padding:12px 26px;background:#2a6df4;color:#fff;border-radius:12px;border:none;font-weight:700;box-shadow:0 8px 24px rgba(42,109,244,0.12);text-decoration:none}
+			.btn-primary:hover{background:#1f5fe0}
+			.btn-secondary{display:inline-flex;align-items:center;gap:10px;padding:12px 22px;background:transparent;color:#2a6df4;border-radius:12px;border:1px solid rgba(42,109,244,0.14);font-weight:700;text-decoration:none}
+			@media(max-width:640px){.actions{flex-direction:column}.btn-primary,.btn-secondary{width:100%;justify-content:center}}
+		</style>
 	</head>
-	<body class="logout-page">
-		<div class="logout-card">
-			<div class="logout-icon"><span class="ti-power-off"></span></div>
-			<h1>Deconnexion</h1>
-			<p data-logout>Fermeture de votre session EducInspect...</p>
-			<div class="logout-actions">
-				<a href="../login.html" class="primary-action">Se deconnecter</a>
-				<a href="../index.html" class="secondary-action">Retour au site</a>
+	<body class="logout-elegant">
+		<div class="logout-wrap">
+			<div class="logout-card">
+				<div class="logout-icon"><span class="ti-power-off"></span></div>
+				<h1>Vous êtes déconnecté</h1>
+				<p class="lead" data-logout>Votre session a été fermée avec succès. Pour retourner à votre espace, reconnectez-vous.</p>
+				<div class="actions">
+					<a href="../login.html" class="btn-primary">Se reconnecter</a>
+					<a href="../index.html" class="btn-secondary">Retour au site</a>
+				</div>
 			</div>
 		</div>
 		<script src="../assets/js/api-einspect.js"></script>

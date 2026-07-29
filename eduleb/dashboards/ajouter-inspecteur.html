@@ -51,7 +51,9 @@
                 <h2 class="form-title">Nouvel inspecteur</h2>
                 <p class="form-subtitle">Remplissez les informations de l'inspecteur.</p>
                 <form id="addInspectorForm" novalidate>
-                    <div class="form-group"><label for="user_id">Compte utilisateur <span class="required">*</span></label><input type="text" id="user_id" name="user_id" class="form-control" placeholder="Ex: inspecteur@example.com" required></div>
+                    <div class="form-group"><label for="user_id">Compte utilisateur <span class="required">*</span></label><select id="user_id" name="user_id" class="form-control" required>
+                        <option value="">Sélectionner un compte utilisateur</option>
+                    </select></div>
                     <div class="form-group"><label for="registration_number">Matricule <span class="required">*</span></label><input type="text" id="registration_number" name="registration_number" class="form-control" placeholder="Ex: INS-001" required></div>
                     <div class="form-group"><label for="specialty">Spécialité</label><input type="text" id="specialty" name="specialty" class="form-control" placeholder="Ex: Mathématiques"></div>
                     <div class="form-group"><label for="phone">Téléphone</label><input type="text" id="phone" name="phone" class="form-control" placeholder="Ex: +229 90 00 00 00"></div>
@@ -60,5 +62,8 @@
             </section>
         </main>
     </div>
+    <script src="../assets/js/api-einspect.js"></script>
+    <script src="../assets/js/role-guard-einspect.js"></script>
+    <script src="../assets/js/admin-resource-form.js"></script>
 </body>
 </html>

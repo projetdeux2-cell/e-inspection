@@ -9,6 +9,13 @@
 		<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
 		<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
 		<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+		<style>
+			/* Button styles used on ajouter-* pages */
+			.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;background:#2a6df4;color:#fff;font-weight:700;border-radius:10px;border:none;text-decoration:none;box-shadow:0 4px 12px rgba(42,109,244,0.18);}
+			.btn-primary:hover{background:#1a5ad9;transform:translateY(-1px)}
+			@media(max-width:768px){.btn-primary{padding:8px 12px;font-size:14px}}
+		</style>
 	</head>
 	<body data-required-role="enseignant">
 		<div class="app-shell">
@@ -17,9 +24,9 @@
 				<div class="profile"><div class="avatar">EN</div><div><strong data-user-name>Enseignant</strong><p data-user-role>Suivi pedagogique</p></div></div>
 				<nav class="side-nav">
 					<a class="active" href="enseignant.html"><span class="ti-blackboard"></span>Enseignant</a>
-					<a href="#rapports-enseignant"><span class="ti-files"></span>Rapports</a>
-					<a href="#"><span class="ti-book"></span>Observations</a>
-					<a href="#"><span class="ti-check-box"></span>Actions pedagogiques</a>
+					<a href="enseignant-rapport.html"><span class="ti-files"></span>Rapports</a>
+					<a href="enseignant-observation.html"><span class="ti-book"></span>Observations</a>
+					<a href="enseignant-Actions-pedagogiques.html"><span class="ti-check-box"></span>Actions pedagogiques</a>
 					<a href="deconnexion.html"><span class="ti-power-off"></span>Deconnexion</a>
 				</nav>
 				<p class="copyright">&copy; 2026 EducInspect</p>
@@ -32,7 +39,10 @@
 				</header>
 				<section class="dashboard-head">
 					<div><p class="eyebrow">Espace enseignant</p><h1>Mes observations pedagogiques</h1><p>L'enseignant consulte les observations qui le concernent et suit ses actions pedagogiques.</p></div>
-					<div class="period"><span class="ti-book"></span> Classe CP1</div>
+					<div style="display:flex;gap:12px;align-items:center;">
+						<div class="period"><span class="ti-book"></span> Classe CP1</div>
+						<a class="btn-primary" href="admin-profile.html"><span class="ti-pencil"></span> Modifier mon profil</a>
+					</div>
 				</section>
 				<section class="stats-grid">
 					<div class="stat-card blue"><span class="ti-files"></span><div><p>Rapports consultables</p><strong>3</strong><small>Cette annee</small></div></div>

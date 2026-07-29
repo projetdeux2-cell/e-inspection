@@ -258,58 +258,6 @@ Configuration live</strong>
     <!-- ===== SCRIPTS ===== -->
     <script src="../assets/js/api-einspect.js"></script>
     <script src="../assets/js/role-guard-einspect.js"></script>
-    <!-- <script src="../assets/js/dashboard-einspect.js"></script>
-    <script src="../assets/js/role-dynamic-einspect.js"></script> -->
-
-    <script>
-        // Gestion du formulaire d'ajout (exemple avec fetch)
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('addUserForm');
-
-            form.addEventListener('submit', async function(event) {
-                event.preventDefault();
-
-                // Récupération des données
-                const formData = new FormData(form);
-                const data = {
-                    name: formData.get('fullName'),
-                    email: formData.get('email'),
-                    password: formData.get('password'),
-                    role: formData.get('role')
-                };
-
-                // Validation basique
-                if (!data.name || !data.email || !data.password || !data.role) {
-                    alert('Veuillez remplir tous les champs obligatoires.');
-                    return;
-                }
-                if (data.password.length < 8) {
-                    alert('Le mot de passe doit contenir au moins 8 caractères.');
-                    return;
-                }
-
-                try {
-                    // Exemple d'envoi vers l'API (à adapter)
-                    // const response = await fetch('/api/users', {
-                    //     method: 'POST',
-                    //     headers: { 'Content-Type': 'application/json' },
-                    //     body: JSON.stringify(data)
-                    // });
-                    // if (!response.ok) throw new Error('Erreur lors de la création');
-                    // const result = await response.json();
-                    // alert('Utilisateur créé avec succès !');
-                    // window.location.href = 'admin-utilisateurs.html';
-
-                    // Simulation pour la démo
-                    console.log('Données envoyées :', data);
-                    alert('✅ Utilisateur créé avec succès (simulation). Redirection vers la liste.');
-                    window.location.href = 'admin-utilisateurs.html';
-                } catch (error) {
-                    console.error(error);
-                    alert('Erreur : ' + error.message);
-                }
-            });
-        });
-    </script>
+    <script src="../assets/js/admin-resource-form.js"></script>
 </body>
 </html>

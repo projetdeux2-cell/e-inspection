@@ -1646,16 +1646,93 @@ grid-template-columns:1fr;
 
 }
 
-.resource-crud-layout{
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+    background: #ffffff;
+    padding: 16px 24px;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(10, 30, 60, 0.06);
+    border: 1px solid #eef2f7;
+}
 
-    display:grid;
+.toolbar .search-box {
+    position: relative;
+    flex: 1 1 320px;
+    min-width: 200px;
+}
 
-    grid-template-columns:320px 1fr;
+.toolbar .search-box span.ti-search {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: #9aaec5;
+    pointer-events: none;
+}
 
-    gap:20px;
+.toolbar .search-box input {
+    width: 100%;
+    padding: 10px 16px 10px 44px;
+    border: 1px solid #e4e9f0;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: 'Mulish', sans-serif;
+    background: #f8fafc;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    color: #1a2a4a;
+}
 
-    align-items:start;
+.toolbar .search-box input::placeholder {
+    color: #9aaec5;
+}
 
+.toolbar .search-box input:focus {
+    outline: none;
+    border-color: #2a6df4;
+    box-shadow: 0 0 0 4px rgba(42, 109, 244, 0.10);
+    background: #ffffff;
+}
+
+.toolbar .btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: #2a6df4;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: 'Mulish', sans-serif;
+    border: none;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 4px 12px rgba(42, 109, 244, 0.25);
+    white-space: nowrap;
+}
+
+.toolbar .btn-add:hover {
+    background: #1a5ad9;
+    color: #ffffff;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(42, 109, 244, 0.35);
+    transform: translateY(-1px);
+}
+
+.toolbar .btn-add:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(42, 109, 244, 0.20);
+}
+
+.toolbar .btn-add span.ti-plus {
+    font-size: 18px;
+    font-weight: 600;
 }
 
 .table-scroll{
@@ -1663,8 +1740,6 @@ grid-template-columns:1fr;
     overflow:auto;
 
 }
-
-.admin-resource-form{
 
     background:#fff;
 

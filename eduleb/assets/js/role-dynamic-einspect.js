@@ -280,13 +280,13 @@ function resourceTitle(resource) {
 
 function resourceTableHeaders(resource) {
 	const headers = {
-		users: ["Nom", "Email", "Role", "Action"],
-		departments: ["Departement", "Code", "Chef-lieu", "Action"],
-		communes: ["Commune", "Code", "Departement", "Action"],
-		schools: ["Ecole", "Commune", "Directeur", "Effectif", "Action"],
-		inspectors: ["Inspecteur", "Matricule", "Specialite", "Telephone", "Action"]
+		users: ["#", "Nom", "Email", "Role", "Action"],
+		departments: ["#", "Departement", "Code", "Chef-lieu", "Action"],
+		communes: ["#", "Commune", "Code", "Departement", "Action"],
+		schools: ["#", "Ecole", "Commune", "Directeur", "Effectif", "Action"],
+		inspectors: ["#", "Inspecteur", "Matricule", "Specialite", "Telephone", "Action"]
 	};
-	return headers[resource] || ["Nom", "Action"];
+	return headers[resource] || ["#", "Nom", "Action"];
 }
 
 function getResourceFields(resource) {
@@ -371,46 +371,51 @@ function resourceFormHtml(resource) {
 
 function renderResourceTable(resource, items) {
 	const rows = {
-		users: items.map((user) => {
+		users: items.map((user, index) => {
 			const role = user.roles?.[0]?.name || "";
 			return `<tr>
+				<td>${index + 1}</td>
 				<td><strong>${safeText(user.name)}</strong><span>${safeText(user.email)}</span></td>
 				<td>${safeText(user.email)}</td>
 				<td><mark class="badge info">${roleLabel(role)}</mark></td>
 				<td>
-					<button class="mini-btn" type="button" data-edit-resource="${resource}" data-id="${user.id}" data-name="${safeText(user.name)}" data-email="${safeText(user.email)}" data-role="${role}">Modifier</button>
+					<a class="mini-btn" href="ajouter-utilisateur.html?id=${user.id}">Modifier</a>
 					<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${user.id}">Supprimer</button>
 				</td>
 			</tr>`;
 		}),
-		departments: items.map((item) => `<tr>
+		departments: items.map((item, index) => `<tr>
+			<td>${index + 1}</td>
 			<td><strong>${safeText(item.name)}</strong></td>
 			<td>${safeText(item.code)}</td>
 			<td>${safeText(item.capital)}</td>
-			<td><button class="mini-btn" type="button" data-edit-resource="${resource}" data-id="${item.id}" data-name="${safeText(item.name)}" data-code="${safeText(item.code)}" data-capital="${safeText(item.capital)}">Modifier</button>
+			<td><a class="mini-btn" href="ajouter-departement.html?id=${item.id}">Modifier</a>
 			<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${item.id}">Supprimer</button></td>
 		</tr>`),
-		communes: items.map((item) => `<tr>
+		communes: items.map((item, index) => `<tr>
+			<td>${index + 1}</td>
 			<td><strong>${safeText(item.name)}</strong></td>
 			<td>${safeText(item.code)}</td>
 			<td>${safeText(item.department?.name)}</td>
-			<td><button class="mini-btn" type="button" data-edit-resource="${resource}" data-id="${item.id}" data-department-id="${item.department_id}" data-name="${safeText(item.name)}" data-code="${safeText(item.code)}">Modifier</button>
+			<td><a class="mini-btn" href="ajouter-commune.html?id=${item.id}">Modifier</a>
 			<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${item.id}">Supprimer</button></td>
 		</tr>`),
-		schools: items.map((item) => `<tr>
+		schools: items.map((item, index) => `<tr>
+			<td>${index + 1}</td>
 			<td><strong>${safeText(item.name)}</strong><span>${safeText(item.code)}</span></td>
 			<td>${safeText(item.commune?.name)}</td>
 			<td>${safeText(item.director_name)}</td>
 			<td>${safeText(item.student_count)}</td>
-			<td><button class="mini-btn" type="button" data-edit-resource="${resource}" data-id="${item.id}" data-commune-id="${item.commune_id}" data-name="${safeText(item.name)}" data-code="${safeText(item.code)}" data-director-name="${safeText(item.director_name)}" data-phone="${safeText(item.phone)}" data-email="${safeText(item.email)}" data-student-count="${safeText(item.student_count)}">Modifier</button>
+			<td><a class="mini-btn" href="ajouter-ecole.html?id=${item.id}">Modifier</a>
 			<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${item.id}">Supprimer</button></td>
 		</tr>`),
-		inspectors: items.map((item) => `<tr>
+		inspectors: items.map((item, index) => `<tr>
+			<td>${index + 1}</td>
 			<td><strong>${safeText(item.user?.name)}</strong><span>${safeText(item.user?.email)}</span></td>
 			<td>${safeText(item.registration_number)}</td>
 			<td>${safeText(item.specialty)}</td>
 			<td>${safeText(item.phone)}</td>
-			<td><button class="mini-btn" type="button" data-edit-resource="${resource}" data-id="${item.id}" data-user-id="${item.user_id}" data-registration-number="${safeText(item.registration_number)}" data-specialty="${safeText(item.specialty)}" data-phone="${safeText(item.phone)}">Modifier</button>
+			<td><a class="mini-btn" href="ajouter-inspecteur.html?id=${item.id}">Modifier</a>
 			<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${item.id}">Supprimer</button></td>
 		</tr>`)
 	};
@@ -423,11 +428,8 @@ async function buildAdminResourcePage() {
 	const title = resourceTitle(resource);
 	const headers = resourceTableHeaders(resource);
 	return sectionHtml(resource, title, `
-		<div class="resource-crud-layout">
-			${resourceFormHtml(resource)}
-			<div class="table-scroll">
-				${tableHtml(headers, [`<tr><td colspan="${headers.length}">Chargement...</td></tr>`]).replace("<tbody>", `<tbody data-admin-resource-body="${resource}">`)}
-			</div>
+		<div class="table-scroll">
+			${tableHtml(headers, [`<tr><td colspan="${headers.length}">Chargement...</td></tr>`]).replace("<tbody>", `<tbody data-admin-resource-body="${resource}">`)}
 		</div>
 	`);
 }
@@ -551,6 +553,7 @@ function setupAdminResourceForm(resource) {
 
 async function setupRoleDashboard() {
 	const role = document.body.dataset.requiredRole;
+	const resource = document.body.dataset.resource;
 	const main = document.querySelector(".main");
 	if (!role || !main) return;
 
@@ -558,8 +561,10 @@ async function setupRoleDashboard() {
 	setActiveMenuItem();
 
 	let sections = [];
-	if (document.body.dataset.resource) {
-		sections = [await buildAdminResourcePage()];
+	if (resource) {
+		if (!document.querySelector(`[data-admin-resource-body="${resource}"]`)) {
+			sections = [await buildAdminResourcePage()];
+		}
 	} else if (role === "admin") {
 		sections = await buildAdminSections();
 	} else if (role === "directeur_departemental") {
@@ -576,7 +581,6 @@ async function setupRoleDashboard() {
 		main.insertAdjacentHTML("beforeend", `<div class="role-sections">${sections.join("")}</div>`);
 	}
 
-	const resource = document.body.dataset.resource;
 	if (resource) {
 		setupAdminResourceForm(resource);
 		await loadAdminResourceRows(resource);
