@@ -58,21 +58,34 @@
 				const data = await window.EducInspectApi.list("inspections");
 				apiData.push(...(Array.isArray(data) ? data : (data?.data || [])));
 			} catch(e) {}
+			const normalize = (items) => items.map(r => ({
+				id: r.id || r.reference,
+				report_path: r.report_path || null,
+				mission: r.mission || { school: { name: r.school } },
+				"mission.school.name": r.school,
+				inspection_date: r.inspection_date || r.date,
+				global_score: r.global_score || 0,
+				status: r.status || "En validation"
+			}));
 			if (!apiData.length && !inbox.length) {
 				const demo = [
 					{ reference: "RIP-2026-001", school: "Ecole Primaire A", date: "2026-07-15", global_score: 85, status: "Signe", teacher: "M. Kouassi" },
 					{ reference: "RIP-2026-002", school: "Ecole Primaire B", date: "2026-07-10", global_score: 62, status: "En validation", teacher: "Mme Diallo" },
 					{ reference: "RIP-2026-003", school: "Groupe Scolaire C", date: "2026-07-05", global_score: 45, status: "Planifiee", teacher: "M. Houessou" }
 				];
-				root.innerHTML = renderDirectionReports ? renderDirectionReports(demo) : demo.map(r => `
-					<div style="padding:12px 16px;border-bottom:1px solid #eef2f7;display:flex;justify-content:space-between;align-items:center">
-						<div><strong>${r.reference}</strong><br><small>${r.school}${r.teacher ? " - " + r.teacher : ""}</small></div>
-						<div style="text-align:right"><strong>${r.global_score}%</strong><br><mark class="${badgeClass(r.status)}">${r.status}</mark></div>
-					</div>
-				`).join("");
+				if (typeof renderDirectionReports === "function") {
+					root.innerHTML = renderDirectionReports(normalize(demo));
+				} else {
+					root.innerHTML = demo.map(r => `
+						<div style="padding:12px 16px;border-bottom:1px solid #eef2f7;display:flex;justify-content:space-between;align-items:center">
+							<div><strong>${r.reference}</strong><br><small>${r.school}${r.teacher ? " - " + r.teacher : ""}</small></div>
+							<div style="text-align:right"><strong>${r.global_score}%</strong><br><mark class="${badgeClass(r.status)}">${r.status}</mark></div>
+						</div>
+					`).join("");
+				}
 				return;
 			}
-			const all = [...inbox, ...apiData];
+			const all = [...normalize(inbox), ...apiData];
 			if (all.length && typeof renderDirectionReports === "function") {
 				root.innerHTML = renderDirectionReports(all);
 			}
