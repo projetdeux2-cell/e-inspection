@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Teacher;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class TeacherController extends Controller
 {
@@ -22,9 +24,28 @@ class TeacherController extends Controller
             'grade' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
+            'password' => ['nullable', 'string', 'min:8'],
         ]);
 
-        return response()->json(Teacher::create($data), 201);
+        if (! empty($data['email']) && ! empty($data['password'])) {
+            $user = User::firstOrCreate(
+                ['email' => $data['email']],
+                ['name' => $data['name'], 'password' => Hash::make($data['password'])]
+            );
+
+            if (! $user->hasRole('enseignant')) {
+                $user->assignRole('enseignant');
+            }
+
+            $data['user_id'] = $user->id;
+            unset($data['password']);
+        } elseif (! empty($data['password'])) {
+            unset($data['password']);
+        }
+
+        $teacher = Teacher::create($data);
+
+        return response()->json($teacher->load(['school', 'user']), 201);
     }
 
     public function show(Teacher $teacher)
@@ -42,7 +63,24 @@ class TeacherController extends Controller
             'grade' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
+            'password' => ['nullable', 'string', 'min:8'],
         ]);
+
+        if (! empty($data['email']) && ! empty($data['password'])) {
+            $user = User::firstOrCreate(
+                ['email' => $data['email']],
+                ['name' => $data['name'] ?? $teacher->name, 'password' => Hash::make($data['password'])]
+            );
+
+            if (! $user->hasRole('enseignant')) {
+                $user->assignRole('enseignant');
+            }
+
+            $data['user_id'] = $user->id;
+            unset($data['password']);
+        } elseif (array_key_exists('password', $data)) {
+            unset($data['password']);
+        }
 
         $teacher->update($data);
 

@@ -61,6 +61,7 @@
                         <div class="form-group"><label for="teacherName">Nom complet <span class="required">*</span></label><input id="teacherName" name="name" type="text" class="form-control" required></div>
                         <div class="form-group"><label for="teacherEmail">Email <span class="required">*</span></label><input id="teacherEmail" name="email" type="email" class="form-control" required></div>
                         <div class="form-group"><label for="teacherPhone">Téléphone</label><input id="teacherPhone" name="phone" type="text" class="form-control"></div>
+                        <div class="form-group"><label for="teacherSchool">École <span class="required">*</span></label><select id="teacherSchool" name="school_id" class="form-control" required><option value="">Sélectionner une école</option></select></div>
                         <div class="form-group">
                             <label for="teacherClass">Classe <span class="required">*</span></label>
                             <select id="teacherClass" name="grade" class="form-control" required>
@@ -87,7 +88,23 @@
         const form = document.getElementById('addTeacherForm');
         const message = document.querySelector('[data-teacher-message]');
         const submitButton = document.getElementById('teacherSubmit');
+        const schoolSelect = document.getElementById('teacherSchool');
         const teacherId = new URLSearchParams(window.location.search).get('id');
+
+        const normalizeList = (payload) => Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
+
+        async function loadSchools() {
+            if (!schoolSelect || !window.EducInspectApi?.list) return;
+            try {
+                const schools = normalizeList(await window.EducInspectApi.list('schools'));
+                schoolSelect.innerHTML = '<option value="">Sélectionner une école</option>' + schools.map((school) => `
+                    <option value="${school.id}">${school.name || 'École #' + school.id}</option>
+                `).join('');
+                if (schools.length) schoolSelect.value = schools[0].id;
+            } catch (error) {
+                console.warn('Impossible de charger les écoles', error);
+            }
+        }
 
         async function loadTeacher() {
             if (!teacherId || !form) return;
@@ -97,6 +114,7 @@
                 form.name.value = teacher.name || '';
                 form.email.value = teacher.email || teacher.user?.email || '';
                 form.phone.value = teacher.phone || '';
+                if (form.elements.school_id) form.elements.school_id.value = teacher.school_id || teacher.school?.id || '';
                 form.elements.grade.value = teacher.grade || '';
                 form.password.required = false;
                 if (submitButton) submitButton.innerHTML = '<span class="ti-save"></span> Modifier';
@@ -106,7 +124,8 @@
             }
         }
 
-        loadTeacher();
+        await loadSchools();
+        await loadTeacher();
 
         form?.addEventListener('submit', async (event) => {
             event.preventDefault();

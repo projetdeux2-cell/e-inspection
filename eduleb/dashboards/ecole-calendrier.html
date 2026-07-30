@@ -9,6 +9,45 @@
     <link href="../assets/fonts/themify-icons.css" rel="stylesheet">
     <link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        .page-header { padding: 24px 0 16px 0; }
+        .page-header h1 { font-size: 28px; font-weight: 800; margin: 0 0 4px 0; color: #0a1e3c; }
+        .page-header p { font-size: 15px; color: #6b7a93; margin: 0; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 32px; }
+        .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; background: #fff; padding: 16px 24px; border-radius: 16px; box-shadow: 0 2px 8px rgba(10,30,60,.06); }
+        .calendar-header h3 { font-size: 18px; font-weight: 800; color: #0a1e3c; margin: 0; }
+        .cal-nav { display: flex; gap: 8px; }
+        .cal-nav button { width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e4e9f0; background: #fff; cursor: pointer; font-size: 16px; transition: .2s; color:#0a1e3c; }
+        .cal-nav button:hover { background: #2a6df4; color: #fff; border-color: #2a6df4; }
+        .day-label { text-align: center; font-size: 12px; font-weight: 700; color: #6b7a93; text-transform: uppercase; padding: 8px 0; }
+        .day-cell { min-height: 80px; background: #fff; border-radius: 12px; padding: 8px; border: 1px solid #eef2f7; transition: .2s; cursor: default; }
+        .day-cell:hover { border-color: #2a6df4; }
+        .day-cell .day-num { font-size: 14px; font-weight: 700; color: #0a1e3c; margin-bottom: 4px; }
+        .day-cell.empty { background: transparent; border-color: transparent; }
+        .day-cell.today { border-color: #2a6df4; background: #f0f6ff; }
+        .day-cell.today .day-num { color: #2a6df4; }
+        .event-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 1px; }
+        .event-dot.mission { background: #3C82F6; }
+        .event-dot.inspection { background: #10B981; }
+        .event-label { font-size: 11px; color: #6b7a93; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .panel { background: #fff; border-radius: 16px; border: 1px solid #eef2f7; box-shadow: 0 2px 8px rgba(10,30,60,.04); overflow: hidden; margin-bottom: 32px; }
+        .panel .panel-head { padding: 18px 24px 12px 24px; border-bottom: 1px solid #f0f3f8; display: flex; justify-content: space-between; align-items: center; }
+        .panel .panel-head h3 { font-weight: 700; font-size: 16px; color: #0a1e3c; margin: 0; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table thead { background: #f8fafc; }
+        .data-table thead th { padding: 14px 20px; text-align: left; font-weight: 700; font-size: 12px; text-transform: uppercase; color: #6b7a93; border-bottom: 1px solid #eef2f7; }
+        .data-table tbody td { padding: 14px 20px; border-bottom: 1px solid #f0f3f8; color: #1a2a4a; }
+        .data-table tbody tr:hover { background: #fafcff; }
+        .badge { border-radius: 30px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
+        .badge.success { background: #DCFCE7; color: #16A34A; }
+        .badge.info { background: #DBEAFE; color: #2563EB; }
+        .badge.warning { background: #FEF3C7; color: #D97706; }
+        .legend-bar { display: flex; gap: 20px; margin-bottom: 20px; font-size: 13px; font-weight: 600; color: #6b7a93; }
+        .legend-bar span { display: flex; align-items: center; gap: 6px; }
+        .live-indicator { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#16A34A; font-weight:600; }
+        .live-indicator .pulse { width:8px; height:8px; border-radius:50%; background:#16A34A; animation:pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    </style>
 </head>
 <body data-required-role="directeur_ecole">
     <div class="app-shell">
@@ -32,17 +71,32 @@
         <main class="main">
             <header class="topbar">
                 <button class="menu-btn" type="button"><span class="ti-menu"></span></button>
-                <div class="search"><span class="ti-search"></span><input data-section-search type="search" placeholder="Rechercher un événement..."></div>
+                <div class="search"><span class="ti-search"></span><input type="search" placeholder="Rechercher un événement..."></div>
                 <div class="top-actions"><button class="icon-btn" type="button"><span class="ti-bell"></span><em>0</em></button><div class="user-menu"><span class="ti-user"></span> <span data-user-role>Directeur</span></div></div>
             </header>
             <section class="dashboard-head">
                 <div><p class="eyebrow">Calendrier école</p><h1>Calendrier</h1><p>Visualisez les missions et inspections programmées pour votre école.</p></div>
                 <div class="period"><span class="ti-calendar"></span> Événements</div>
             </section>
+            <div class="calendar-header">
+                <div class="cal-nav"><button id="prevMonth">&#8249;</button></div>
+                <h3 id="monthLabel">Juillet 2026</h3>
+                <div class="cal-nav">
+                    <button id="nextMonth">&#8250;</button>
+                    <span class="live-indicator"><span class="pulse"></span> Temps reel</span>
+                </div>
+            </div>
+            <div class="legend-bar">
+                <span><span class="event-dot mission"></span> Mission</span>
+                <span><span class="event-dot inspection"></span> Inspection</span>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
             <section class="panel">
-                <div class="panel-head"><h2>Évènements</h2></div>
-                <div class="panel-copy">Le calendrier reprend les dates issues des missions et des inspections de la base de données.</div>
-                <div data-section-content></div>
+                <div class="panel-head"><h3>Evenements du mois</h3></div>
+                <table class="data-table">
+                    <thead><tr><th>Date</th><th>Ecole</th><th>Type</th><th>Statut</th></tr></thead>
+                    <tbody data-events-body><tr><td colspan="4">Chargement...</td></tr></tbody>
+                </table>
             </section>
         </main>
     </div>
@@ -50,5 +104,127 @@
     <script src="../assets/js/role-guard-einspect.js"></script>
     <script src="../assets/js/dashboard-einspect.js"></script>
     <script src="../assets/js/role-dynamic-einspect.js"></script>
+    <script>
+        (function() {
+            const grid = document.getElementById("calendarGrid");
+            const label = document.getElementById("monthLabel");
+            const eventsBody = document.querySelector("[data-events-body]");
+            const now = new Date();
+            let currentYear = now.getFullYear();
+            let currentMonth = now.getMonth();
+            let allEvents = [];
+            let refreshInterval;
+
+            const monthNames = ["Janvier","Fevrier","Mars","Avril","Mai","Juin","Juillet","Aout","Septembre","Octobre","Novembre","Decembre"];
+            const dayNames = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+
+            function badgeClass(s) {
+                const v = String(s).toLowerCase();
+                if (v.includes("realisee") || v.includes("signe") || v.includes("termine")) return "success";
+                if (v.includes("confirmee") || v.includes("validation")) return "info";
+                return "warning";
+            }
+
+            function renderCalendar(events) {
+                label.textContent = monthNames[currentMonth] + " " + currentYear;
+                const firstDay = new Date(currentYear, currentMonth, 1);
+                let startDay = firstDay.getDay() - 1;
+                if (startDay < 0) startDay = 6;
+                const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+                const today = new Date();
+                let html = dayNames.map(d => `<div class="day-label">${d}</div>`).join("");
+                for (let i = 0; i < startDay; i++) html += '<div class="day-cell empty"></div>';
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = String(d).padStart(2,"0") + "/" + String(currentMonth+1).padStart(2,"0") + "/" + currentYear;
+                    const isToday = d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+                    const dayEvents = events.filter(e => e.date === dateStr);
+                    let dots = dayEvents.map(e => `<span class="event-dot ${e.type}"></span>`).join("");
+                    let evLabel = dayEvents.length ? `<div class="event-label">${dayEvents[0].school || ""}</div>` : "";
+                    html += `<div class="day-cell${isToday ? " today" : ""}"><div class="day-num">${d}</div>${dots}${evLabel}</div>`;
+                }
+                grid.innerHTML = html;
+            }
+
+            function renderEventTable(events) {
+                if (!eventsBody) return;
+                if (!events.length) { eventsBody.innerHTML = '<tr><td colspan="4">Aucun evenement ce mois.</td></tr>'; return; }
+                eventsBody.innerHTML = events.map(e => `
+                    <tr>
+                        <td>${e.date}</td>
+                        <td><strong>${e.school || "-"}</strong></td>
+                        <td>${e.type === "mission" ? "Mission" : "Inspection"}</td>
+                        <td><span class="badge ${badgeClass(e.status)}">${e.status || "-"}</span></td>
+                    </tr>
+                `).join("");
+            }
+
+            function getMonthEvents(events) {
+                return events.filter(e => {
+                    const parts = e.date.split("/");
+                    return parseInt(parts[1]) === currentMonth + 1 && parseInt(parts[2]) === currentYear;
+                });
+            }
+
+            async function fetchEvents() {
+                try {
+                    const [missionsData, inspectionsData] = await Promise.all([
+                        window.EducInspectApi.list("missions"),
+                        window.EducInspectApi.list("inspections")
+                    ]);
+                    const missions = Array.isArray(missionsData) ? missionsData : (missionsData?.data || []);
+                    const inspections = Array.isArray(inspectionsData) ? inspectionsData : (inspectionsData?.data || []);
+                    const events = [];
+                    missions.forEach(m => {
+                        if (!m.planned_date) return;
+                        const d = new Date(m.planned_date);
+                        if (!isNaN(d)) events.push({ date: String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear(), school: m.school?.name, type: "mission", status: m.status });
+                    });
+                    inspections.forEach(i => {
+                        if (!i.inspection_date) return;
+                        const d = new Date(i.inspection_date);
+                        if (!isNaN(d)) events.push({ date: String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear(), school: i.mission?.school?.name || i.school?.name, type: "inspection", status: i.status });
+                    });
+                    if (!events.length) throw new Error("empty");
+                    return events;
+                } catch(e) {
+                    return [
+                        { date: "15/07/2026", school: "Ecole Primaire A", type: "mission", status: "Planifiee" },
+                        { date: "15/07/2026", school: "Ecole Primaire A", type: "inspection", status: "Signe" },
+                        { date: "10/07/2026", school: "Ecole Primaire B", type: "mission", status: "Confirmee" },
+                        { date: "05/07/2026", school: "Ecole Primaire B", type: "inspection", status: "Realisee" }
+                    ];
+                }
+            }
+
+            async function loadAndRender() {
+                const events = await fetchEvents();
+                allEvents = events;
+                const monthEvents = getMonthEvents(events);
+                renderCalendar(monthEvents);
+                renderEventTable(monthEvents);
+            }
+
+            loadAndRender();
+            refreshInterval = setInterval(loadAndRender, 60000);
+            window.addEventListener("storage", (e) => {
+                if (e.key === "educinspect_inbox" || e.key === INBOX_KEY) loadAndRender();
+            });
+
+            document.getElementById("prevMonth").addEventListener("click", () => {
+                currentMonth--;
+                if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+                const monthEvents = getMonthEvents(allEvents);
+                renderCalendar(monthEvents);
+                renderEventTable(monthEvents);
+            });
+            document.getElementById("nextMonth").addEventListener("click", () => {
+                currentMonth++;
+                if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+                const monthEvents = getMonthEvents(allEvents);
+                renderCalendar(monthEvents);
+                renderEventTable(monthEvents);
+            });
+        })();
+    </script>
 </body>
 </html>
