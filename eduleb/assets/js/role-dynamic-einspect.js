@@ -60,9 +60,9 @@ async function buildAdminSections() {
 function roleLabel(role) {
 	const labels = {
 		admin: "Admin",
-		directeur_departemental: "Direction",
+		directeur_departemental: "Directeur départemental",
 		inspecteur: "Inspecteur",
-		directeur_ecole: "Ecole",
+		directeur_ecole: "Directeur d'école",
 		enseignant: "Enseignant"
 	};
 	return labels[role] || role || "-";
@@ -151,6 +151,59 @@ function setupAdminUserForm() {
 	});
 }
 
+function formatDate(value) {
+	if (!value) return "-";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return safeText(value);
+	return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function buildReportHref(reportPath) {
+	if (!reportPath) return "";
+	if (/^https?:\/\//i.test(reportPath)) return reportPath;
+	if (reportPath.startsWith("/")) return `${window.location.origin}${reportPath}`;
+	if (reportPath.startsWith("storage/")) return `${window.location.origin}/${reportPath}`;
+	if (reportPath.startsWith("public/")) return `${window.location.origin}/${reportPath.replace(/^public\//, "storage/")}`;
+	return `${window.location.origin}/storage/${reportPath}`;
+}
+
+function renderDirectionRecommendations(recommendations) {
+	const rows = renderRows(recommendations, (item) => {
+		const schoolName = safeText(item.inspection?.mission?.school?.name, "École non renseignée");
+		const inspectorName = safeText(item.inspection?.mission?.inspector?.user?.name, "Inspecteur");
+		const priority = safeText(item.priority, "medium");
+		return `
+			<tr>
+				<td><strong>${safeText(item.description)}</strong></td>
+				<td>${schoolName}</td>
+				<td>${inspectorName}</td>
+				<td><mark class="badge ${priority === 'high' ? 'warning' : priority === 'low' ? 'success' : 'info'}">${priority}</mark></td>
+				<td>${formatDate(item.due_date)}</td>
+				<td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td>
+			</tr>`;
+	}, "Aucune recommandation disponible pour le moment.");
+	return tableHtml(["Recommandation", "École", "Inspecteur", "Priorité", "Échéance", "Statut"], rows);
+}
+
+function renderDirectionReports(inspections) {
+	const rows = renderRows(inspections, (item) => {
+		const reportHref = buildReportHref(item.report_path);
+		const actionHtml = reportHref
+			? `<div class="action-stack"><a class="mini-btn" href="${reportHref}" target="_blank" rel="noopener">Consulter</a><a class="mini-btn" href="${reportHref}" download="rapport-${item.id}.pdf">Télécharger PDF</a></div>`
+			: `<span class="muted">PDF indisponible</span>`;
+		return `
+			<tr>
+				<td><strong>${safeText(item.report_path || `Rapport-${item.id}`)}</strong></td>
+				<td>${safeText(item.mission?.school?.name)}</td>
+				<td>${formatDate(item.inspection_date)}</td>
+				<td>${safeText(item.global_score)}%</td>
+				<td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td>
+				<td>${actionHtml}</td>
+			</tr>`;
+	}, "Aucun rapport disponible pour le moment.");
+	return tableHtml(["Rapport", "École", "Date", "Score", "Statut", "Action"], rows);
+}
+
 async function buildDirectionSections() {
 	const [missions, recommendations] = await Promise.all([
 		fetchList("missions"),
@@ -165,6 +218,24 @@ async function buildDirectionSections() {
 			`<tr><td><strong>${safeText(item.description)}</strong></td><td>${safeText(item.inspection?.mission?.school?.name)}</td><td><mark class="badge ${item.priority === 'high' ? 'warning' : item.priority === 'low' ? 'success' : 'info'}">${safeText(item.priority)}</mark></td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		)))
 	];
+}
+
+async function setupDirectionDataViews() {
+	const recommendationsRoot = document.querySelector("[data-direction-recommendations]");
+	const reportsRoot = document.querySelector("[data-direction-reports]");
+	if (!recommendationsRoot && !reportsRoot) return;
+
+	try {
+		const [recommendations, inspections] = await Promise.all([
+			fetchList("recommendations"),
+			fetchList("inspections")
+		]);
+		if (recommendationsRoot) recommendationsRoot.innerHTML = renderDirectionRecommendations(recommendations);
+		if (reportsRoot) reportsRoot.innerHTML = renderDirectionReports(inspections);
+	} catch (error) {
+		if (recommendationsRoot) recommendationsRoot.innerHTML = '<p class="muted">Impossible de charger les recommandations.</p>';
+		if (reportsRoot) reportsRoot.innerHTML = '<p class="muted">Impossible de charger les rapports.</p>';
+	}
 }
 
 async function buildInspectorSections() {
@@ -224,8 +295,8 @@ function fixMenuLinks(role) {
 		directeur_departemental: {
 			"Calendrier": "calendrier-direction.html",
 			"Rapports a valider": "rapports-direction.html",
-			"Statistiques": "statistiques.html",
-			"Recommandations": "recommandations.html"
+			"Statistiques": "statistiques-direction.html",
+			"Recommandations": "recommandations-direction.html"
 		},
 		inspecteur: {
 			"Missions": "missions-inspecteur.html",
@@ -479,16 +550,22 @@ async function loadResourceSelectOptions(resource) {
 
 function setupAdminResourceForm(resource) {
 	const form = document.querySelector(`[data-admin-resource-form="${resource}"]`);
-	if (!form) return;
 	const message = document.querySelector(`[data-admin-resource-message]`);
-	const resetButton = form.querySelector("[data-reset-resource-form]");
+	const resetButton = form ? form.querySelector("[data-reset-resource-form]") : null;
 	const show = (text, type = "info") => { if (!message) return; message.textContent = text; message.dataset.type = type; };
-	const reset = () => { form.reset(); form.elements.id.value = ""; if (resource === "users") form.elements.password.required = true; show(""); };
+	const reset = () => {
+		if (!form) return;
+		form.reset();
+		form.elements.id.value = "";
+		if (resource === "users") form.elements.password.required = true;
+		show("");
+	};
 	resetButton?.addEventListener("click", reset);
 
 	document.addEventListener("click", async (event) => {
 		const editButton = event.target.closest("[data-edit-resource]");
 		if (editButton) {
+			if (!form) return;
 			const targetResource = editButton.dataset.editResource;
 			if (targetResource !== resource) return;
 			form.elements.id.value = editButton.dataset.id || "";
@@ -505,7 +582,7 @@ function setupAdminResourceForm(resource) {
 
 		const deleteButton = event.target.closest("[data-delete-resource]");
 		if (deleteButton && deleteButton.dataset.deleteResource === resource) {
-			const confirmed = window.confirm("Voulez-vous supprimer cet element ?");
+			const confirmed = window.confirm("Voulez-vous supprimer cet élément ?");
 			if (!confirmed) return;
 			try {
 				if (resource === "users") {
@@ -513,7 +590,7 @@ function setupAdminResourceForm(resource) {
 				} else {
 					await window.EducInspectApi.deleteResource(resource, deleteButton.dataset.id);
 				}
-				show("Element supprime avec succes.", "success");
+				show("Élément supprimé avec succès.", "success");
 				await loadAdminResourceRows(resource);
 			} catch (error) {
 				show(error.message || "Erreur pendant la suppression.", "error");
@@ -521,7 +598,7 @@ function setupAdminResourceForm(resource) {
 		}
 	});
 
-	form.addEventListener("submit", async (event) => {
+	form?.addEventListener("submit", async (event) => {
 		event.preventDefault();
 		const payload = Object.fromEntries(new FormData(form).entries());
 		if (resource === "users" && !payload.password && form.elements.id.value) delete payload.password;
@@ -534,14 +611,14 @@ function setupAdminResourceForm(resource) {
 				} else {
 					await window.EducInspectApi.updateResource(resource, form.elements.id.value, payload);
 				}
-				show("Element modifie avec succes.", "success");
+				show("Élément modifié avec succès.", "success");
 			} else {
 				if (resource === "users") {
 					await window.EducInspectApi.createAdminUser(payload);
 				} else {
 					await window.EducInspectApi.createResource(resource, payload);
 				}
-				show("Element cree avec succes.", "success");
+				show("Élément créé avec succès.", "success");
 			}
 			reset();
 			await loadAdminResourceRows(resource);
@@ -580,6 +657,8 @@ async function setupRoleDashboard() {
 	if (sections.length) {
 		main.insertAdjacentHTML("beforeend", `<div class="role-sections">${sections.join("")}</div>`);
 	}
+
+	await setupDirectionDataViews();
 
 	if (resource) {
 		setupAdminResourceForm(resource);

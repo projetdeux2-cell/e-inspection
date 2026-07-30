@@ -59,14 +59,31 @@ async function loadSelectOptions(resource, form) {
     }
 }
 
+function normalizeUserRole(role) {
+    if (!role) return role;
+    const normalized = String(role).trim().toLowerCase();
+    if (normalized === "directeur" || normalized === "direction" || normalized === "directeur_departemental") {
+        return "directeur_departemental";
+    }
+    if (normalized === "directeur_ecole") {
+        return "directeur_ecole";
+    }
+    return normalized;
+}
+
 function buildFormPayload(form, resource) {
     const payload = Object.fromEntries(new FormData(form).entries());
     if (payload.fullName) {
         payload.name = payload.fullName;
         delete payload.fullName;
     }
-    if (resource === "users" && !payload.password) {
-        delete payload.password;
+    if (resource === "users") {
+        if (payload.role) {
+            payload.role = normalizeUserRole(payload.role);
+        }
+        if (!payload.password) {
+            delete payload.password;
+        }
     }
     if (resource !== "users" && payload.password === "") {
         delete payload.password;
@@ -103,6 +120,11 @@ async function populateForm(form, resource, item) {
 async function handleFormSubmit(event, resource, form, listPage, itemId) {
     event.preventDefault();
     const payload = buildFormPayload(form, resource);
+
+    if (resource === "users" && !itemId && !payload.password) {
+        payload.password = "password";
+    }
+
     try {
         if (itemId) {
             if (resource === "users") {
