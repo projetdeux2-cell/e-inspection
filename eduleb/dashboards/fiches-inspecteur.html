@@ -58,6 +58,7 @@
                 <a href="calendrier-inspecteur.html"><span class="ti-calendar"></span>Calendrier</a>
                 <a class="active" href="fiches-inspecteur.html"><span class="ti-file"></span>Fiches</a>
                 <a href="rapports-inspecteur.html"><span class="ti-files"></span>Rapports</a>
+                <a href="profile.html"><span class="ti-settings"></span>Paramètres</a>
                 <a href="deconnexion.html"><span class="ti-power-off"></span>Deconnexion</a>
             </nav>
             <p class="copyright">&copy; 2026 EducInspect</p>
@@ -113,7 +114,7 @@
                     const date = i.inspection_date || i.date || "-";
                     const ref = i.reference || "FIP-" + (i.id || "?");
                     return `
-                        <div class="fiche-card">
+                        <div class="fiche-card" onclick="location.href='creer-rapport-inspecteur.html?school=${encodeURIComponent(school)}'">
                             <h4>${ref}</h4>
                             <p>${school}</p>
                             <div class="score-display">
@@ -124,24 +125,58 @@
                                 <span><span class="ti-calendar"></span> ${date}</span>
                                 <span><span class="ti-check-box"></span> ${i.status || "En cours"}</span>
                             </div>
+                            <div style="margin-top:12px"><button class="mini-btn" type="button" onclick="event.stopPropagation();location.href='creer-rapport-inspecteur.html?school=${encodeURIComponent(school)}'">Creer un rapport</button></div>
                         </div>
                     `;
                 }).join("");
             }
 
+            const inbox = typeof getInboxReports === "function" ? getInboxReports() : [];
+            if (inbox.length) {
+                allInspections = inbox.map(r => ({
+                    reference: r.reference,
+                    global_score: r.global_score,
+                    score: r.global_score,
+                    school: { name: r.school },
+                    "school.name": r.school,
+                    date: r.date,
+                    inspection_date: r.date,
+                    status: r.status
+                }));
+                render(allInspections);
+                search?.addEventListener("input", () => {
+                    const q = search.value.toLowerCase().trim();
+                    if (!q) return render(allInspections);
+                    render(allInspections.filter(i => {
+                        const text = [i.school?.name, i.reference, i.status].join(" ").toLowerCase();
+                        return text.includes(q);
+                    }));
+                });
+                return;
+            }
+
             try {
                 const data = await window.EducInspectApi.list("inspections");
                 allInspections = Array.isArray(data) ? data : (data?.data || []);
-                render(allInspections);
             } catch(e) {
-                grid.innerHTML = '<div class="empty-state"><span class="ti-alert"></span><h4>Erreur</h4><p>Impossible de charger les fiches.</p></div>';
+                console.warn("API fiches indisponible, chargement demo");
             }
+
+            if (!allInspections.length) {
+                allInspections = [
+                    { reference: "FIP-2026-001", global_score: 85, score: 85, "school.name": "Ecole Primaire A", school: { name: "Ecole Primaire A" }, inspection_date: "2026-07-15", date: "2026-07-15", status: "Signe" },
+                    { reference: "FIP-2026-002", global_score: 62, score: 62, "school.name": "Ecole Primaire B", school: { name: "Ecole Primaire B" }, inspection_date: "2026-07-10", date: "2026-07-10", status: "En validation" },
+                    { reference: "FIP-2026-003", global_score: 45, score: 45, "school.name": "Groupe Scolaire C", school: { name: "Groupe Scolaire C" }, inspection_date: "2026-07-05", date: "2026-07-05", status: "Planifiee" }
+                ];
+            }
+            render(allInspections);
 
             search?.addEventListener("input", () => {
                 const q = search.value.toLowerCase().trim();
                 if (!q) return render(allInspections);
                 render(allInspections.filter(i => {
-                    const text = [i.mission?.school?.name, i.school?.name, i.reference, i.status].join(" ").toLowerCase();
+                    const school = i.mission?.school?.name || i.school?.name || i["school.name"] || "";
+                    const text = [school, i.reference, i.status].join(" ").toLowerCase();
                     return text.includes(q);
                 }));
             });

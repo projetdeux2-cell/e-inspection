@@ -96,7 +96,8 @@
 					<a href="statistiques-direction.html"><span class="ti-bar-chart"></span>Statistiques</a>
 					<a href="recommandations-direction.html"><span class="ti-check-box"></span>Recommandations</a>
 					<a href="assigner-mission.html"><span class="ti-clipboard"></span>Assigner mission</a>
-					<a href="deconnexion.html"><span class="ti-power-off"></span>Déconnexion</a>
+					<a href="profile.html"><span class="ti-settings"></span>Paramètres</a>
+                <a href="deconnexion.html"><span class="ti-power-off"></span>Déconnexion</a>
 				</nav>
 				<p class="copyright">&copy; 2026 EducInspect</p>
 			</aside>
@@ -221,5 +222,27 @@
 				});
 			})();
 		</script>
+	<script>
+		(async () => {
+			if (!window.EducInspectApi?.token) return;
+			try {
+				const data = await window.EducInspectApi.dashboard();
+				const counts = {
+					missions: data.missions || 0,
+					inspections: data.inspections || 0,
+					schools: data.schools || 0,
+					average_score: data.average_score || 0,
+					recommendations_todo: data.recommendations_todo || 0
+				};
+				document.querySelectorAll("[data-api-stat]").forEach((node) => {
+					const key = node.dataset.apiStat;
+					if (counts[key] === undefined) return;
+					node.textContent = key === "average_score" ? `${counts[key]}%` : counts[key];
+				});
+			} catch (e) {
+				console.warn("Chargement dashboard direction impossible", e);
+			}
+		})();
+	</script>
 	</body>
 </html>

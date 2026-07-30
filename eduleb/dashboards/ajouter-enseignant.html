@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ajouter un enseignant - EducInspect</title>
+    <link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
+    <link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/fonts/themify-icons.css" rel="stylesheet">
+    <link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        .form-container {
+            max-width: 720px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #eef2f7;
+            box-shadow: 0 2px 8px rgba(10, 30, 60, 0.04);
+            padding: 32px 40px;
+        }
+        .form-title { font-size: 24px; font-weight: 800; color: #0a1e3c; margin-bottom: 8px; }
+        .form-subtitle { font-size: 14px; color: #6b7a93; margin-bottom: 28px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display:block; font-weight:700; font-size:14px; color:#1a2a4a; margin-bottom:6px; }
+        .form-control { width:100%; padding:10px 16px; border:1px solid #e4e9f0; border-radius:12px; font-size:14px; background:#f8fafc; color:#1a2a4a; }
+        .form-control:focus { outline:none; border-color:#2a6df4; box-shadow:0 0 0 4px rgba(42,109,244,0.10); background:#fff; }
+        .form-actions { display:flex; gap:12px; margin-top:28px; flex-wrap:wrap; }
+        .btn-primary { display:inline-flex; align-items:center; gap:8px; padding:10px 28px; background:#2a6df4; color:#fff; font-weight:700; border-radius:12px; border:none; text-decoration:none; cursor:pointer; }
+        .btn-secondary { display:inline-flex; align-items:center; gap:8px; padding:10px 28px; background:#f0f3f8; color:#1a2a4a; font-weight:700; border-radius:12px; border:1px solid #e4e9f0; text-decoration:none; cursor:pointer; }
+        @media (max-width:768px) { .form-container{padding:24px 18px;} .form-actions{flex-direction:column;} .btn-primary,.btn-secondary{width:100%;justify-content:center;} }
+    </style>
+</head>
+<body data-required-role="directeur_ecole">
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" href="../index.html"><img src="../assets/img/favicon.png" alt="EducInspect"><span>EducInspect</span></a>
+            <div class="profile"><div class="avatar">DE</div><div><strong data-user-name>Direction d'école</strong><p data-user-role>Suivi local</p></div></div>
+            <nav class="side-nav">
+                <a href="ecole.html"><span class="ti-home"></span>École</a>
+                <a href="ecole-rapports.html"><span class="ti-files"></span>Rapports</a>
+                <a href="ecole-plan-daction.html"><span class="ti-check-box"></span>Plan d'action</a>
+                <a href="ecole-observations.html"><span class="ti-comments"></span>Observations</a>
+                <a class="active" href="ajouter-enseignant.html"><span class="ti-user"></span>Créer un enseignant</a>
+                <a href="ecole-recommandations.html"><span class="ti-star"></span>Recommandations</a>
+                <a href="ecole-calendrier.html"><span class="ti-calendar"></span>Calendrier</a>
+                <a href="ecole-enseignants.html"><span class="ti-users"></span>Équipe</a>
+                <a href="profile.html"><span class="ti-settings"></span>Paramètres</a>
+                <a href="deconnexion.html"><span class="ti-power-off"></span>Déconnexion</a>
+            </nav>
+            <p class="copyright">© 2026 EducInspect</p>
+        </aside>
+        <main class="main">
+            <header class="topbar"><button class="menu-btn" type="button"><span class="ti-menu"></span></button><div class="search"><span class="ti-search"></span><input type="search" placeholder="Rechercher un enseignant..."></div><div class="top-actions"><button class="icon-btn" type="button"><span class="ti-bell"></span><em>0</em></button><div class="user-menu"><span class="ti-user"></span> <span data-user-role>Directeur</span></div></div></header>
+            <section class="dashboard-head"><div><p class="eyebrow">Équipe</p><h1>Créer un nouvel enseignant</h1><p>Ajoutez un profil enseignant pour le suivi pédagogique de votre école.</p></div><div class="period"><span class="ti-user"></span> Enseignants</div></section>
+            <section class="workspace-grid">
+                <div class="form-container">
+                    <h2 class="form-title">Nouvel enseignant</h2>
+                    <p class="form-subtitle">Entrez les informations de l'enseignant à ajouter.</p>
+                    <form id="addTeacherForm">
+                        <div class="form-group"><label for="teacherName">Nom complet <span class="required">*</span></label><input id="teacherName" name="name" type="text" class="form-control" required></div>
+                        <div class="form-group"><label for="teacherEmail">Email <span class="required">*</span></label><input id="teacherEmail" name="email" type="email" class="form-control" required></div>
+                        <div class="form-group"><label for="teacherPhone">Téléphone</label><input id="teacherPhone" name="phone" type="text" class="form-control"></div>
+                        <div class="form-group">
+                            <label for="teacherClass">Classe <span class="required">*</span></label>
+                            <select id="teacherClass" name="grade" class="form-control" required>
+                                <option value="">Sélectionner une classe</option>
+                                <option value="CI">CI</option>
+                                <option value="CP">CP</option>
+                                <option value="CE1">CE1</option>
+                                <option value="CE2">CE2</option>
+                                <option value="CM1">CM1</option>
+                                <option value="CM2">CM2</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label for="teacherPassword">Mot de passe <span class="required">*</span></label><input id="teacherPassword" name="password" type="password" class="form-control" placeholder="8 caractères minimum" required></div>
+                        <div class="form-actions"><button id="teacherSubmit" type="submit" class="btn-primary"><span class="ti-save"></span> Enregistrer</button><a href="ecole-enseignants.html" class="btn-secondary"><span class="ti-close"></span> Annuler</a></div>
+                        <p class="form-message" data-teacher-message></p>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../assets/js/api-einspect.js"></script>
+    <script src="../assets/js/role-guard-einspect.js"></script>
+    <script>
+        const form = document.getElementById('addTeacherForm');
+        const message = document.querySelector('[data-teacher-message]');
+        const submitButton = document.getElementById('teacherSubmit');
+        const teacherId = new URLSearchParams(window.location.search).get('id');
+
+        async function loadTeacher() {
+            if (!teacherId || !form) return;
+            try {
+                if (message) message.textContent = 'Chargement des données...';
+                const teacher = await window.EducInspectApi.request(`/teachers/${teacherId}`);
+                form.name.value = teacher.name || '';
+                form.email.value = teacher.email || teacher.user?.email || '';
+                form.phone.value = teacher.phone || '';
+                form.elements.grade.value = teacher.grade || '';
+                form.password.required = false;
+                if (submitButton) submitButton.innerHTML = '<span class="ti-save"></span> Modifier';
+                if (message) message.textContent = '';
+            } catch (error) {
+                if (message) message.textContent = error.message || 'Impossible de charger l\'enseignant.';
+            }
+        }
+
+        loadTeacher();
+
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = {
+                name: form.name.value,
+                email: form.email.value,
+                phone: form.phone.value,
+                grade: form.elements.grade.value,
+                school_id: 1
+            };
+
+            if (form.password.value) {
+                payload.password = form.password.value;
+            }
+
+            try {
+                if (message) message.textContent = 'Enregistrement en cours...';
+                if (teacherId) {
+                    await window.EducInspectApi.updateResource('teachers', teacherId, payload);
+                    if (message) message.textContent = 'Enseignant mis à jour avec succès.';
+                } else {
+                    await window.EducInspectApi.createResource('teachers', payload);
+                    if (message) message.textContent = 'Enseignant créé avec succès.';
+                    form.reset();
+                }
+                if (form.password) form.password.value = '';
+            } catch (error) {
+                if (message) message.textContent = error.message || 'Erreur pendant la création.';
+            }
+        });
+    </script>
+</body>
+</html>

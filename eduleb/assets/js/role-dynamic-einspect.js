@@ -33,9 +33,9 @@ function tableHtml(headers, rows) {
 	`;
 }
 
-function renderRows(items, mapper, emptyText = "Aucune donnee disponible.") {
+function renderRows(items, mapper, emptyText = "Aucune donnee disponible.", emptyColspan = 5) {
 	if (!items.length) {
-		return [`<tr><td colspan="5">${emptyText}</td></tr>`];
+		return [`<tr><td colspan="${emptyColspan}">${emptyText}</td></tr>`];
 	}
 	return items.map(mapper);
 }
@@ -406,16 +406,35 @@ async function renderSchoolTeachersPage(root) {
 	const render = (list) => {
 		const rows = renderRows(list, (item) => `
 			<tr>
-				<td><strong>${safeText(item.name)}</strong><span>${safeText(item.subject)}</span></td>
+				<td><strong>${safeText(item.name)}</strong><span>Classe ${safeText(item.grade)}</span></td>
 				<td>${safeText(item.school?.name)}</td>
-				<td>${safeText(item.grade)}</td>
 				<td>${safeText(item.email)}</td>
 				<td>${safeText(item.phone)}</td>
-			</tr>`);
-		renderSectionPane(root, ["Enseignant", "École", "Niveau", "Email", "Téléphone"], rows);
+				<td>
+					<a class="mini-btn" href="ajouter-enseignant.html?id=${item.id}">Modifier</a>
+					<button class="mini-btn" type="button" data-teacher-delete="${item.id}">Supprimer</button>
+				</td>
+			</tr>`,
+			"Aucun enseignant trouvé.",
+			5);
+		renderSectionPane(root, ["Enseignant", "École", "Email", "Téléphone", "Action"], rows);
 	};
 	render(teachers);
 	createSectionSearch(document.querySelector("[data-section-search]"), teachers, render);
+
+	document.addEventListener('click', async (event) => {
+		const deleteButton = event.target.closest('[data-teacher-delete]');
+		if (!deleteButton) return;
+		const teacherId = deleteButton.dataset.teacherDelete;
+		const confirmed = window.confirm('Voulez-vous supprimer cet enseignant ?');
+		if (!confirmed) return;
+		try {
+			await window.EducInspectApi.deleteResource('teachers', teacherId);
+			render(await fetchList('teachers'));
+		} catch (error) {
+			window.alert(error.message || 'Impossible de supprimer l\'enseignant.');
+		}
+	});
 }
 
 async function renderValidateTeachersPage(root) {
@@ -520,39 +539,55 @@ function fixMenuLinks(role) {
 			"Ecoles": "admin-ecoles.html",
 			"Inspecteurs": "admin-inspecteurs.html",
 			"Parametres": "admin-parametres.html",
+			"Paramètres": "admin-parametres.html",
 			"Deconnexion": "deconnexion.html"
 		},
 		directeur_departemental: {
 			"Calendrier": "calendrier-direction.html",
 			"Rapports": "consultation-rapports.html",
 			"Statistiques": "statistiques-direction.html",
-			"Recommandations": "recommandations-direction.html"
+			"Recommandations": "recommandations-direction.html",
+			"Parametres": "profile.html",
+			"Paramètres": "profile.html",
+			"Deconnexion": "deconnexion.html"
 		},
 		inspecteur: {
 			"Missions": "missions-inspecteur.html",
 			"Calendrier": "calendrier-inspecteur.html",
 			"Fiches": "fiches-inspecteur.html",
-			"Rapports": "rapports-inspecteur.html"
+			"Rapports": "rapports-inspecteur.html",
+			"Parametres": "profile.html",
+			"Paramètres": "profile.html",
+			"Deconnexion": "deconnexion.html"
 		},
 		directeur_ecole: {
-				"Rapports": "ecole-rapports.html",
-				"Plan d'action": "ecole-plan-daction.html",
-				"Observations": "ecole-observations.html",
-				"Validation enseignants": "valider-enseignants.html",
-				"Recommandations": "ecole-recommandations.html",
-				"Calendrier": "ecole-calendrier.html",
-				"Équipe": "ecole-enseignants.html"
-			},
-			enseignant: {
-				"Rapports": "enseignant-rapport.html",
-				"Observations": "enseignant-observation.html",
-				"Actions pedagogiques": "enseignant-Actions-pedagogiques.html"
+			"Rapports": "ecole-rapports.html",
+			"Plan d'action": "ecole-plan-daction.html",
+			"Observations": "ecole-observations.html",
+			"Créer un enseignant": "ajouter-enseignant.html",
+			"Recommandations": "ecole-recommandations.html",
+			"Calendrier": "ecole-calendrier.html",
+			"Équipe": "ecole-enseignants.html",
+			"Parametres": "profile.html",
+			"Paramètres": "profile.html",
+			"Deconnexion": "deconnexion.html"
+		},
+		enseignant: {
+			"Rapports": "enseignant-rapport.html",
+			"Observations": "enseignant-observation.html",
+			"Actions pedagogiques": "enseignant-Actions-pedagogiques.html",
+			"Parametres": "profile.html",
+			"Paramètres": "profile.html",
+			"Deconnexion": "deconnexion.html"
+		}
 	};
 
 	const links = map[role] || {};
-	document.querySelectorAll(".side-nav a").forEach((link) => {
+	document.querySelectorAll('.side-nav a').forEach((link) => {
 		const text = link.textContent.trim();
-		if (links[text]) link.href = links[text];
+		if (links[text]) {
+			link.href = links[text];
+		}
 	});
 }
 
@@ -884,7 +919,7 @@ async function setupRoleDashboard() {
 		if (!document.querySelector(`[data-admin-resource-body="${resource}"]`)) {
 			sections = [await buildAdminResourcePage()];
 		}
-	} else if (dashboardPages.includes(page)) {
+	} else if (dashboardPages.includes(page) && document.body.dataset.dynamicSections !== "false") {
 		if (role === "admin") {
 			sections = await buildAdminSections();
 		} else if (role === "directeur_departemental") {

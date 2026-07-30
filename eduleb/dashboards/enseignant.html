@@ -27,6 +27,7 @@
 					<a href="enseignant-rapport.html"><span class="ti-files"></span>Rapports</a>
 					<a href="enseignant-observation.html"><span class="ti-book"></span>Observations</a>
 					<a href="enseignant-Actions-pedagogiques.html"><span class="ti-check-box"></span>Actions pedagogiques</a>
+					<a href="profile.html"><span class="ti-settings"></span>Paramètres</a>
 					<a href="deconnexion.html"><span class="ti-power-off"></span>Deconnexion</a>
 				</nav>
 				<p class="copyright">&copy; 2026 EducInspect</p>
@@ -41,13 +42,13 @@
 					<div><p class="eyebrow">Espace enseignant</p><h1>Mes observations pedagogiques</h1><p>L'enseignant consulte les observations qui le concernent et suit ses actions pedagogiques.</p></div>
 					<div style="display:flex;gap:12px;align-items:center;">
 						<div class="period"><span class="ti-book"></span> Classe CP1</div>
-						<a class="btn-primary" href="admin-profile.html"><span class="ti-pencil"></span> Modifier mon profil</a>
+						<a class="btn-primary" href="profile.html"><span class="ti-pencil"></span> Modifier mon profil</a>
 					</div>
 				</section>
 				<section class="stats-grid">
-					<div class="stat-card blue"><span class="ti-files"></span><div><p>Rapports consultables</p><strong>3</strong><small>Cette annee</small></div></div>
-					<div class="stat-card green"><span class="ti-check"></span><div><p>Actions terminees</p><strong>2</strong><small>Suivi classe</small></div></div>
-					<div class="stat-card teal"><span class="ti-alert"></span><div><p>Actions attendues</p><strong>3</strong><small>A realiser</small></div></div>
+					<div class="stat-card blue"><span class="ti-files"></span><div><p>Rapports consultables</p><strong data-api-stat="reports">3</strong><small>Cette annee</small></div></div>
+					<div class="stat-card green"><span class="ti-check"></span><div><p>Actions terminees</p><strong data-api-stat="actions_done">2</strong><small>Suivi classe</small></div></div>
+					<div class="stat-card teal"><span class="ti-alert"></span><div><p>Actions attendues</p><strong data-api-stat="actions_pending">3</strong><small>A realiser</small></div></div>
 					<div class="stat-card yellow"><span class="ti-star"></span><div><p>Derniere appreciation</p><strong>Bien</strong><small>Inspection</small></div></div>
 					<div class="stat-card purple"><span class="ti-calendar"></span><div><p>Prochain suivi</p><strong>20</strong><small>Aout 2026</small></div></div>
 				</section>
@@ -79,5 +80,25 @@
 		<script src="../assets/js/role-guard-einspect.js"></script>
 		<script src="../assets/js/dashboard-einspect.js"></script>
 		<script src="../assets/js/role-dynamic-einspect.js"></script>
+	<script>
+		(async () => {
+			if (!window.EducInspectApi?.token) return;
+			try {
+				const data = await window.EducInspectApi.dashboard();
+				const apiStat = {
+					reports: data.reports || data.inspections || 0,
+					actions_done: data.recommendations_done || 0,
+					actions_pending: data.recommendations_todo || 0
+				};
+				document.querySelectorAll("[data-api-stat]").forEach((node) => {
+					const key = node.dataset.apiStat;
+					if (apiStat[key] === undefined) return;
+					node.textContent = apiStat[key];
+				});
+			} catch (e) {
+				console.warn("Chargement dashboard enseignant impossible", e);
+			}
+		})();
+	</script>
 	</body>
 </html>

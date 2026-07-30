@@ -148,6 +148,44 @@ Configuration live</strong></div> -->
 	<script src="../assets/js/role-guard-einspect.js?v=20260723-admin"></script>
 	<script src="../assets/js/dashboard-einspect.js?v=20260723-admin"></script>
 	<script src="../assets/js/role-dynamic-einspect.js?v=20260723-admin"></script>
+	<script>
+		(async () => {
+			if (!window.EducInspectApi?.token) return;
+			try {
+				const [data, usersData, deptsData, communesData] = await Promise.all([
+					window.EducInspectApi.dashboard(),
+					window.EducInspectApi.adminUsers(),
+					window.EducInspectApi.list("departments"),
+					window.EducInspectApi.list("communes")
+				]);
+				const counts = {
+					users: (Array.isArray(usersData) ? usersData : usersData?.data || []).length,
+					schools: data.schools || 0,
+					inspectors: data.inspectors || 0,
+					departments: (Array.isArray(deptsData) ? deptsData : deptsData?.data || []).length,
+					communes: (Array.isArray(communesData) ? communesData : communesData?.data || []).length,
+					recommendations_todo: data.recommendations_todo || 0,
+					recommendations_done: data.recommendations_done || 0,
+					missions: data.missions || 0,
+					inspections: data.inspections || 0,
+					average_score: data.average_score || 0
+				};
+				document.querySelectorAll("[data-api-stat]").forEach((node) => {
+					const key = node.dataset.apiStat;
+					if (counts[key] === undefined) return;
+					node.textContent = key === "average_score" ? `${counts[key]}%` : counts[key];
+				});
+				if (typeof renderDashboardChart === "function") {
+					renderDashboardChart({ todo: counts.recommendations_todo, done: counts.recommendations_done });
+				}
+				if (typeof renderAdminPerformanceSummary === "function") {
+					renderAdminPerformanceSummary(counts);
+				}
+			} catch (e) {
+				console.warn("Chargement dashboard admin impossible", e);
+			}
+		})();
+	</script>
 </body>
 
 </html>
