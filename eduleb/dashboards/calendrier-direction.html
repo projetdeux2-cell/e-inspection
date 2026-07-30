@@ -18,7 +18,7 @@
             <nav class="side-nav">
                 <a href="direction.html"><span class="ti-briefcase"></span>Direction</a>
                 <a class="active" href="calendrier-direction.html"><span class="ti-calendar"></span>Calendrier</a>
-                <a href="rapports-direction.html"><span class="ti-files"></span>Rapports</a>
+                <a href="consultation-rapports.html"><span class="ti-files"></span>Rapports</a>
                 <a href="statistiques-direction.html"><span class="ti-bar-chart"></span>Statistiques</a>
                 <a href="recommandations-direction.html"><span class="ti-check-box"></span>Recommandations</a>
                 <a href="assigner-mission.html"><span class="ti-clipboard"></span>Assigner mission</a>
@@ -38,18 +38,39 @@
             </section>
             <section class="panel">
                 <div class="panel-head"><h2>Planning de la semaine</h2><a href="assigner-mission.html">Nouvelle mission</a></div>
-                <div class="panel-copy">Consultez les inspections à venir et suivez le rythme du département.</div>
-                <ul class="calendar-list">
-                    <li><strong>Lundi — Inspection à l’école primaire A</strong><small>09:00 • Inspecteur Diop</small></li>
-                    <li><strong>Mardi — Visite au collège moderne</strong><small>10:30 • Inspecteur Sall</small></li>
-                    <li><strong>Jeudi — Suivi pédagogique au lycée régional</strong><small>14:00 • Inspecteur Bâ</small></li>
-                </ul>
+                <div class="panel-copy">Les missions assignées apparaissent ici automatiquement dans le calendrier de la direction.</div>
+                <ul class="calendar-list" data-direction-calendar></ul>
             </section>
         </main>
     </div>
-    <script src="../assets/js/api-einspect.js"></script>
-    <script src="../assets/js/role-guard-einspect.js"></script>
-    <script src="../assets/js/dashboard-einspect.js"></script>
-    <script src="../assets/js/role-dynamic-einspect.js"></script>
+    <script src="../assets/js/api-einspect.js?v=20260730-direction-fix-2"></script>
+    <script src="../assets/js/role-guard-einspect.js?v=20260730-direction-fix-2"></script>
+    <script src="../assets/js/dashboard-einspect.js?v=20260730-direction-fix-2"></script>
+    <script src="../assets/js/role-dynamic-einspect.js?v=20260730-direction-fix-2"></script>
+    <script>
+        async function loadDirectionCalendar() {
+            const root = document.querySelector('[data-direction-calendar]');
+            if (!root) return;
+            try {
+                const missions = await window.EducInspectApi.list('missions');
+                const items = Array.isArray(missions) ? missions : (missions?.data || []);
+                if (!items.length) {
+                    root.innerHTML = '<li><strong>Aucune mission assignée pour le moment.</strong><small>Créez une mission depuis la page d’affectation.</small></li>';
+                    return;
+                }
+                root.innerHTML = items.map((item) => {
+                    const date = item.planned_date || '-';
+                    const school = item.school?.name || 'École à définir';
+                    const inspector = item.inspector?.user?.name || 'Inspecteur à définir';
+                    const status = item.status || 'planned';
+                    return `<li><strong>${school}</strong><small>${date} • ${inspector} • ${status}</small></li>`;
+                }).join('');
+            } catch (error) {
+                root.innerHTML = '<li><strong>Impossible de charger le calendrier.</strong><small>Vérifiez la connexion à l’API.</small></li>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDirectionCalendar);
+    </script>
 </body>
 </html>

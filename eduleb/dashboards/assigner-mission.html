@@ -29,7 +29,7 @@
             <nav class="side-nav">
                 <a href="direction.html"><span class="ti-briefcase"></span>Direction</a>
                 <a href="calendrier-direction.html"><span class="ti-calendar"></span>Calendrier</a>
-                <a href="rapports-direction.html"><span class="ti-files"></span>Rapports</a>
+                <a href="consultation-rapports.html"><span class="ti-files"></span>Rapports</a>
                 <a href="statistiques-direction.html"><span class="ti-bar-chart"></span>Statistiques</a>
                 <a href="recommandations-direction.html"><span class="ti-check-box"></span>Recommandations</a>
                 <a class="active" href="assigner-mission.html"><span class="ti-clipboard"></span>Assigner mission</a>
@@ -55,6 +55,7 @@
                 <div class="period"><span class="ti-clipboard"></span> Assignation</div>
             </section>
             <section class="page-card">
+                <div id="missionMessage" class="form-field full" style="margin-bottom: 12px;"></div>
                 <form id="missionAssignmentForm" class="form-grid">
                     <div class="form-field">
                         <label for="missionTitle">Titre de la mission</label>
@@ -62,29 +63,23 @@
                     </div>
                     <div class="form-field">
                         <label for="missionInspector">Inspecteur</label>
-                        <select id="missionInspector" name="inspector" required>
+                        <select id="missionInspector" name="inspector_id" required>
                             <option value="">Sélectionner</option>
-                            <option value="M. Diop">M. Diop</option>
-                            <option value="Mme. Sall">Mme. Sall</option>
-                            <option value="M. Bâ">M. Bâ</option>
                         </select>
                     </div>
                     <div class="form-field">
                         <label for="missionSchool">École</label>
-                        <select id="missionSchool" name="school" required>
+                        <select id="missionSchool" name="school_id" required>
                             <option value="">Sélectionner</option>
-                            <option value="École primaire A">École primaire A</option>
-                            <option value="Collège moderne">Collège moderne</option>
-                            <option value="Lycée régional">Lycée régional</option>
                         </select>
                     </div>
                     <div class="form-field">
                         <label for="missionDate">Date</label>
-                        <input id="missionDate" name="date" type="date" required>
+                        <input id="missionDate" name="planned_date" type="date" required>
                     </div>
                     <div class="form-field full">
                         <label for="missionDescription">Description</label>
-                        <textarea id="missionDescription" name="description" rows="4" placeholder="Préciser les objectifs et les priorités"></textarea>
+                        <textarea id="missionDescription" name="objective" rows="4" placeholder="Préciser les objectifs et les priorités"></textarea>
                     </div>
                     <div class="form-field full">
                         <button class="btn-submit" type="submit">Enregistrer la mission</button>
@@ -98,19 +93,68 @@
     <script src="../assets/js/dashboard-einspect.js?v=20260730-direction-fix-2"></script>
     <script src="../assets/js/role-dynamic-einspect.js?v=20260730-direction-fix-2"></script>
     <script>
-        document.getElementById('missionDate').valueAsDate = new Date();
-        document.getElementById('missionAssignmentForm').addEventListener('submit', function (event) {
+        const missionForm = document.getElementById('missionAssignmentForm');
+        const missionDate = document.getElementById('missionDate');
+        const missionMessage = document.getElementById('missionMessage');
+        const inspectorSelect = document.getElementById('missionInspector');
+        const schoolSelect = document.getElementById('missionSchool');
+
+        function setMissionMessage(text, isError = false) {
+            missionMessage.innerHTML = `<p style="margin:0; color:${isError ? '#b42318' : '#027a48'}; font-weight:600;">${text}</p>`;
+        }
+
+        function normalizeCollection(payload) {
+            if (Array.isArray(payload)) return payload;
+            if (Array.isArray(payload?.data)) return payload.data;
+            return [];
+        }
+
+        async function populateMissionSelects() {
+            try {
+                const [schoolsResp, inspectorsResp] = await Promise.all([
+                    window.EducInspectApi.list('schools'),
+                    window.EducInspectApi.list('inspectors')
+                ]);
+
+                const schools = normalizeCollection(schoolsResp);
+                const inspectors = normalizeCollection(inspectorsResp);
+
+                schoolSelect.innerHTML = '<option value="">Sélectionner</option>' + schools.map((school) => `<option value="${school.id}">${school.name} (${school.code || 'École'})</option>`).join('');
+                inspectorSelect.innerHTML = '<option value="">Sélectionner</option>' + inspectors.map((inspector) => `<option value="${inspector.id}">${inspector.user?.name || 'Inspecteur'}${inspector.registration_number ? ` - ${inspector.registration_number}` : ''}</option>`).join('');
+            } catch (error) {
+                setMissionMessage(error.message || 'Impossible de charger les écoles et inspecteurs disponibles.', true);
+            }
+        }
+
+        missionDate.valueAsDate = new Date();
+
+        missionForm.addEventListener('submit', async function (event) {
             event.preventDefault();
-            const data = new FormData(this);
-            const values = Object.fromEntries(data.entries());
-            const key = 'educinspect_direction_missions';
-            const current = JSON.parse(localStorage.getItem(key) || '[]');
-            current.unshift(values);
-            localStorage.setItem(key, JSON.stringify(current.slice(0, 8)));
-            alert('Mission enregistrée avec succès.');
-            this.reset();
-            document.getElementById('missionDate').valueAsDate = new Date();
+            const payload = Object.fromEntries(new FormData(this).entries());
+
+            if (!window.EducInspectApi?.token) {
+                setMissionMessage('Vous devez être connecté pour assigner une mission.', true);
+                return;
+            }
+
+            try {
+                setMissionMessage('Enregistrement de la mission en cours...');
+                await window.EducInspectApi.createResource('missions', {
+                    inspector_id: Number(payload.inspector_id),
+                    school_id: Number(payload.school_id),
+                    planned_date: payload.planned_date,
+                    objective: payload.objective || payload.title,
+                    status: 'planned'
+                });
+                setMissionMessage('Mission assignée avec succès. L’inspecteur et l’école concernée la verront dans leurs dashboards.');
+                this.reset();
+                missionDate.valueAsDate = new Date();
+            } catch (error) {
+                setMissionMessage(error.message || 'Impossible d’enregistrer la mission.', true);
+            }
         });
+
+        populateMissionSelects();
     </script>
 </body>
 </html>

@@ -189,7 +189,7 @@ function renderDirectionReports(inspections) {
 	const rows = renderRows(inspections, (item) => {
 		const reportHref = buildReportHref(item.report_path);
 		const actionHtml = reportHref
-			? `<div class="action-stack"><a class="mini-btn" href="${reportHref}" target="_blank" rel="noopener">Consulter</a><a class="mini-btn" href="${reportHref}" download="rapport-${item.id}.pdf">Télécharger PDF</a></div>`
+			? `<div class="action-stack"><a class="mini-btn" href="${reportHref}" target="_blank" rel="noopener">Consulter</a><a class="mini-btn" href="${reportHref}" download="rapport-${item.id}.pdf">Télécharger</a></div>`
 			: `<span class="muted">PDF indisponible</span>`;
 		return `
 			<tr>
@@ -244,10 +244,9 @@ async function buildInspectorSections() {
 		fetchList("inspections")
 	]);
 	return [
-		sectionHtml("calendrier-inspecteur", "Mon calendrier", tableHtml(["Ecole", "Date", "Commune", "Statut"], renderRows(missions, (item) =>
+		sectionHtml("calendrier-inspecteur", "Mes missions", tableHtml(["Ecole", "Date", "Commune", "Statut"], renderRows(missions, (item) =>
 			`<tr><td><strong>${safeText(item.school?.name)}</strong></td><td>${safeText(item.planned_date)}</td><td>${safeText(item.school?.commune?.name)}</td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		))),
-		sectionHtml("fiches-inspecteur", "Fiches d'inspection", `<p>Zone de remplissage des fiches numeriques de l'inspecteur. Les notes et observations seront sauvegardees par l'API inspections/evaluations.</p>`),
 		sectionHtml("rapports-inspecteur", "Rapports produits", tableHtml(["Rapport", "Ecole", "Score", "Etat"], renderRows(inspections, (item) =>
 			`<tr><td><strong>${safeText(item.report_path || `RIP-${item.id}`)}</strong></td><td>${safeText(item.mission?.school?.name)}</td><td>${safeText(item.global_score)}%</td><td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td></tr>`
 		)))
@@ -255,11 +254,15 @@ async function buildInspectorSections() {
 }
 
 async function buildSchoolSections() {
-	const [recommendations, inspections] = await Promise.all([
+	const [recommendations, inspections, missions] = await Promise.all([
 		fetchList("recommendations"),
-		fetchList("inspections")
+		fetchList("inspections"),
+		fetchList("missions")
 	]);
 	return [
+		sectionHtml("missions-ecole", "Missions assignées", tableHtml(["Mission", "Inspecteur", "Date", "Statut"], renderRows(missions, (item) =>
+			`<tr><td><strong>${safeText(item.objective || "Mission d'inspection")}</strong><span>${safeText(item.school?.name)}</span></td><td>${safeText(item.inspector?.user?.name)}</td><td>${safeText(item.planned_date)}</td><td><mark class="${badgeClass(item.status || "planned")}">${safeText(item.status || "planned")}</mark></td></tr>`
+		))),
 		sectionHtml("plan-daction", "Plan d'action", tableHtml(["Action", "Responsable", "Echeance", "Statut"], renderRows(recommendations, (item) =>
 			`<tr><td><strong>${safeText(item.description)}</strong></td><td>Direction d'ecole</td><td>${safeText(item.due_date)}</td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		))),
@@ -272,11 +275,236 @@ async function buildSchoolSections() {
 async function buildTeacherSections() {
 	const recommendations = await fetchList("recommendations");
 	return [
-		sectionHtml("observations", "Observations pedagogiques", tableHtml(["Observation", "Classe", "Statut"], renderRows(recommendations, (item) =>
+		sectionHtml("observations", "Observations pédagogiques", tableHtml(["Observation", "Classe", "Statut"], renderRows(recommendations, (item) =>
 			`<tr><td><strong>${safeText(item.description)}</strong></td><td>CP1</td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
-		))),
-		sectionHtml("actions-pedagogiques", "Actions pedagogiques", `<p>Ces actions concernent uniquement l'enseignant connecte et son suivi de classe.</p>`)
+		)))
 	];
+}
+
+function renderSectionPane(root, headers, rowsHtml) {
+	if (!root) return;
+	root.innerHTML = tableHtml(headers, rowsHtml);
+}
+
+function createSectionSearch(input, items, renderFn) {
+	if (!input) return;
+	input.addEventListener("input", () => {
+		const query = (input.value || "").toLowerCase().trim();
+		if (!query) {
+			renderFn(items);
+			return;
+		}
+		const filtered = items.filter((item) => JSON.stringify(item).toLowerCase().includes(query));
+		renderFn(filtered);
+	});
+}
+
+async function renderSchoolReportsPage(root) {
+	const inspections = await fetchList("inspections");
+	const filtered = inspections;
+	const render = (list) => {
+		const rows = renderRows(list, (item) => {
+			const reportHref = buildReportHref(item.report_path);
+			const actionHtml = reportHref
+				? `<div class="action-stack"><a class="mini-btn" href="${reportHref}" target="_blank" rel="noopener">Voir</a><a class="mini-btn" href="${reportHref}" download="rapport-${item.id}.pdf">Télécharger</a></div>`
+				: `<span class="muted">PDF indisponible</span>`;
+			return `
+				<tr>
+					<td><strong>${safeText(item.report_path || `Rapport-${item.id}`)}</strong><span>${safeText(item.mission?.school?.name)}</span></td>
+					<td>${formatDate(item.inspection_date)}</td>
+					<td>${safeText(item.global_score)}%</td>
+					<td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td>
+					<td>${actionHtml}</td>
+				</tr>`;
+		});
+		renderSectionPane(root, ["Rapport", "École", "Date", "Score", "Statut", "Action"], rows);
+	};
+	render(filtered);
+	createSectionSearch(document.querySelector("[data-section-search]"), filtered, render);
+}
+
+async function renderSchoolActionPlanPage(root) {
+	const recommendations = await fetchList("recommendations");
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.description)}</strong></td>
+				<td>${safeText(item.inspection?.mission?.school?.name)}</td>
+				<td>${formatDate(item.due_date)}</td>
+				<td><mark class="badge ${item.priority === 'high' ? 'warning' : item.priority === 'low' ? 'success' : 'info'}">${safeText(item.priority)}</mark></td>
+				<td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Action", "École", "Échéance", "Priorité", "Statut"], rows);
+	};
+	render(recommendations);
+	createSectionSearch(document.querySelector("[data-section-search]"), recommendations, render);
+}
+
+async function renderSchoolObservationsPage(root) {
+	const inspections = await fetchList("inspections");
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.summary || 'Observation enregistrée')}</strong></td>
+				<td>${safeText(item.mission?.school?.name)}</td>
+				<td>${formatDate(item.inspection_date)}</td>
+				<td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Observation", "École", "Date", "Statut"], rows);
+	};
+	render(inspections);
+	createSectionSearch(document.querySelector("[data-section-search]"), inspections, render);
+}
+
+async function renderSchoolRecommendationsPage(root) {
+	const recommendations = await fetchList("recommendations");
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.description)}</strong></td>
+				<td>${safeText(item.inspection?.mission?.school?.name)}</td>
+				<td>${formatDate(item.due_date)}</td>
+				<td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Recommandation", "École", "Échéance", "Statut"], rows);
+	};
+	render(recommendations);
+	createSectionSearch(document.querySelector("[data-section-search]"), recommendations, render);
+}
+
+async function renderSchoolCalendarPage(root) {
+	const [missions, inspections] = await Promise.all([fetchList("missions"), fetchList("inspections")]);
+	const events = [...missions.map((item) => ({
+		date: item.planned_date,
+		school: item.school?.name,
+		type: "Mission",
+		status: item.status
+	})), ...inspections.map((item) => ({
+		date: item.inspection_date,
+		school: item.mission?.school?.name,
+		type: "Inspection",
+		status: item.status || 'Signe'
+	}))].sort((a, b) => new Date(a.date) - new Date(b.date));
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td>${formatDate(item.date)}</td>
+				<td>${safeText(item.school)}</td>
+				<td>${safeText(item.type)}</td>
+				<td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Date", "École", "Type", "Statut"], rows);
+	};
+	render(events);
+	createSectionSearch(document.querySelector("[data-section-search]"), events, render);
+}
+
+async function renderSchoolTeachersPage(root) {
+	const teachers = await fetchList("teachers");
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.name)}</strong><span>${safeText(item.subject)}</span></td>
+				<td>${safeText(item.school?.name)}</td>
+				<td>${safeText(item.grade)}</td>
+				<td>${safeText(item.email)}</td>
+				<td>${safeText(item.phone)}</td>
+			</tr>`);
+		renderSectionPane(root, ["Enseignant", "École", "Niveau", "Email", "Téléphone"], rows);
+	};
+	render(teachers);
+	createSectionSearch(document.querySelector("[data-section-search]"), teachers, render);
+}
+
+async function renderValidateTeachersPage(root) {
+	const teachers = await fetchList("teachers");
+	const render = (list) => {
+		const rows = renderRows(list, (item) => {
+			const status = item.email ? 'Validé' : 'À valider';
+			return `
+				<tr>
+					<td><strong>${safeText(item.name)}</strong></td>
+					<td>${safeText(item.school?.name)}</td>
+					<td>${safeText(item.subject)}</td>
+					<td>${safeText(item.email)}</td>
+					<td><mark class="badge ${item.email ? 'success' : 'warning'}">${status}</mark></td>
+				</tr>`;
+		});
+		renderSectionPane(root, ["Enseignant", "École", "Matière", "Email", "Statut"], rows);
+	};
+	render(teachers);
+	createSectionSearch(document.querySelector("[data-section-search]"), teachers, render);
+}
+
+async function renderTeacherReportsPage(root) {
+	const inspections = await fetchList("inspections");
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.report_path || `Rapport-${item.id}`)}</strong></td>
+				<td>${safeText(item.mission?.school?.name)}</td>
+				<td>${formatDate(item.inspection_date)}</td>
+				<td>${safeText(item.global_score)}%</td>
+				<td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Rapport", "École", "Date", "Score", "Statut"], rows);
+	};
+	render(inspections);
+	createSectionSearch(document.querySelector("[data-section-search]"), inspections, render);
+}
+
+async function renderTeacherObservationsPage(root) {
+	const inspections = await fetchList("inspections");
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.summary || 'Observation enregistrée')}</strong></td>
+				<td>${safeText(item.mission?.school?.name)}</td>
+				<td>${formatDate(item.inspection_date)}</td>
+				<td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Observation", "École", "Date", "Statut"], rows);
+	};
+	render(inspections);
+	createSectionSearch(document.querySelector("[data-section-search]"), inspections, render);
+}
+
+async function renderTeacherActionsPage(root) {
+	const recommendations = await fetchList("recommendations");
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.description)}</strong></td>
+				<td>${safeText(item.inspection?.mission?.school?.name)}</td>
+				<td>${formatDate(item.due_date)}</td>
+				<td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Action", "École", "Échéance", "Statut"], rows);
+	};
+	render(recommendations);
+	createSectionSearch(document.querySelector("[data-section-search]"), recommendations, render);
+}
+
+async function setupSectionPages() {
+	const page = window.location.pathname.split("/").pop();
+	const root = document.querySelector("[data-section-content]");
+	if (!root) return;
+	const renderers = {
+		"ecole-rapports.html": renderSchoolReportsPage,
+		"ecole-plan-daction.html": renderSchoolActionPlanPage,
+		"ecole-observations.html": renderSchoolObservationsPage,
+		"ecole-recommandations.html": renderSchoolRecommendationsPage,
+		"ecole-calendrier.html": renderSchoolCalendarPage,
+		"ecole-enseignants.html": renderSchoolTeachersPage,
+		"valider-enseignants.html": renderValidateTeachersPage,
+		"enseignant-rapport.html": renderTeacherReportsPage,
+		"enseignant-observation.html": renderTeacherObservationsPage,
+		"enseignant-Actions-pedagogiques.html": renderTeacherActionsPage
+	};
+	const renderer = renderers[page];
+	if (renderer) {
+		await renderer(root);
+	}
 }
 
 function fixMenuLinks(role) {
@@ -294,7 +522,7 @@ function fixMenuLinks(role) {
 		},
 		directeur_departemental: {
 			"Calendrier": "calendrier-direction.html",
-			"Rapports a valider": "rapports-direction.html",
+			"Rapports": "consultation-rapports.html",
 			"Statistiques": "statistiques-direction.html",
 			"Recommandations": "recommandations-direction.html"
 		},
@@ -305,15 +533,18 @@ function fixMenuLinks(role) {
 			"Rapports": "rapports-inspecteur.html"
 		},
 		directeur_ecole: {
-			"Rapports": "rapports-ecole.html",
-			"Plan d'action": "plan-daction.html",
-			"Observations": "observations.html"
-		},
-		enseignant: {
-			"Rapports": "rapports-enseignant.html",
-			"Observations": "observations.html",
-			"Actions pedagogiques": "actions-pedagogiques.html"
-		}
+				"Rapports": "ecole-rapports.html",
+				"Plan d'action": "ecole-plan-daction.html",
+				"Observations": "ecole-observations.html",
+				"Validation enseignants": "valider-enseignants.html",
+				"Recommandations": "ecole-recommandations.html",
+				"Calendrier": "ecole-calendrier.html",
+				"Équipe": "ecole-enseignants.html"
+			},
+			enseignant: {
+				"Rapports": "enseignant-rapport.html",
+				"Observations": "enseignant-observation.html",
+				"Actions pedagogiques": "enseignant-Actions-pedagogiques.html"
 	};
 
 	const links = map[role] || {};
@@ -637,21 +868,32 @@ async function setupRoleDashboard() {
 	fixMenuLinks(role);
 	setActiveMenuItem();
 
+	const page = window.location.pathname.split("/").pop();
+	const dashboardPages = [
+		"admin.html",
+		"direction.html",
+		"inspecteur.html",
+		"ecole.html",
+		"enseignant.html"
+	];
+
 	let sections = [];
 	if (resource) {
 		if (!document.querySelector(`[data-admin-resource-body="${resource}"]`)) {
 			sections = [await buildAdminResourcePage()];
 		}
-	} else if (role === "admin") {
-		sections = await buildAdminSections();
-	} else if (role === "directeur_departemental") {
-		sections = await buildDirectionSections();
-	} else if (role === "inspecteur") {
-		sections = await buildInspectorSections();
-	} else if (role === "directeur_ecole") {
-		sections = await buildSchoolSections();
-	} else if (role === "enseignant") {
-		sections = await buildTeacherSections();
+	} else if (dashboardPages.includes(page)) {
+		if (role === "admin") {
+			sections = await buildAdminSections();
+		} else if (role === "directeur_departemental") {
+			sections = await buildDirectionSections();
+		} else if (role === "inspecteur") {
+			sections = await buildInspectorSections();
+		} else if (role === "directeur_ecole") {
+			sections = await buildSchoolSections();
+		} else if (role === "enseignant") {
+			sections = await buildTeacherSections();
+		}
 	}
 
 	if (sections.length) {
@@ -659,6 +901,7 @@ async function setupRoleDashboard() {
 	}
 
 	await setupDirectionDataViews();
+	await setupSectionPages();
 
 	if (resource) {
 		setupAdminResourceForm(resource);
