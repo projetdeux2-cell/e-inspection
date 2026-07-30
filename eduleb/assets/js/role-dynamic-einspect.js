@@ -161,10 +161,12 @@ function formatDate(value) {
 function buildReportHref(reportPath) {
 	if (!reportPath) return "";
 	if (/^https?:\/\//i.test(reportPath)) return reportPath;
-	if (reportPath.startsWith("/")) return `${window.location.origin}${reportPath}`;
-	if (reportPath.startsWith("storage/")) return `${window.location.origin}/${reportPath}`;
-	if (reportPath.startsWith("public/")) return `${window.location.origin}/${reportPath.replace(/^public\//, "storage/")}`;
-	return `${window.location.origin}/storage/${reportPath}`;
+	const apiBase = window.EducInspectApi?.baseUrl?.replace(/\/api\/?$/, "") || window.location.origin || "";
+	const origin = apiBase || window.location.origin || "";
+	if (reportPath.startsWith("/")) return `${origin}${reportPath}`;
+	if (reportPath.startsWith("storage/")) return `${origin}/${reportPath}`;
+	if (reportPath.startsWith("public/")) return `${origin}/${reportPath.replace(/^public\//, "storage/")}`;
+	return `${origin}/storage/${reportPath}`;
 }
 
 function renderDirectionRecommendations(recommendations) {

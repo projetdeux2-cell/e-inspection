@@ -3,23 +3,27 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Rapports - Enseignant</title>
+    <title>Rapports - École</title>
     <link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
     <link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="../assets/fonts/themify-icons.css" rel="stylesheet">
     <link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
-<body data-required-role="enseignant">
+<body data-required-role="directeur_ecole">
     <div class="app-shell">
         <aside class="sidebar">
             <a class="brand" href="../index.html"><img src="../assets/img/logo1.png" alt="EducInspect"><span>EducInspect</span></a>
-            <div class="profile"><div class="avatar">EN</div><div><strong data-user-name>Enseignant</strong><p data-user-role>Suivi pédagogique</p></div></div>
+            <div class="profile"><div class="avatar">DE</div><div><strong data-user-name>Direction d'école</strong><p data-user-role>Suivi local</p></div></div>
             <nav class="side-nav">
-                <a href="enseignant.html"><span class="ti-blackboard"></span>Enseignant</a>
-                <a class="active" href="enseignant-rapport.html"><span class="ti-files"></span>Rapports</a>
-                <a href="enseignant-observation.html"><span class="ti-book"></span>Observations</a>
-                <a href="enseignant-Actions-pedagogiques.html"><span class="ti-check-box"></span>Actions pédagogiques</a>
+                <a href="ecole.html"><span class="ti-home"></span>École</a>
+                <a class="active" href="ecole-rapports.html"><span class="ti-files"></span>Rapports</a>
+                <a href="ecole-plan-daction.html"><span class="ti-check-box"></span>Plan d'action</a>
+                <a href="ecole-observations.html"><span class="ti-comments"></span>Observations</a>
+                <a href="valider-enseignants.html"><span class="ti-user"></span>Validation enseignants</a>
+                <a href="ecole-recommandations.html"><span class="ti-star"></span>Recommandations</a>
+                <a href="ecole-calendrier.html"><span class="ti-calendar"></span>Calendrier</a>
+                <a href="ecole-enseignants.html"><span class="ti-users"></span>Équipe</a>
                 <a href="deconnexion.html"><span class="ti-power-off"></span>Déconnexion</a>
             </nav>
             <p class="copyright">© 2026 EducInspect</p>
@@ -28,15 +32,15 @@
             <header class="topbar">
                 <button class="menu-btn" type="button"><span class="ti-menu"></span></button>
                 <div class="search"><span class="ti-search"></span><input data-section-search type="search" placeholder="Rechercher un rapport..."></div>
-                <div class="top-actions"><button class="icon-btn" type="button"><span class="ti-bell"></span><em>0</em></button><div class="user-menu"><span class="ti-user"></span> <span data-user-role>Enseignant</span></div></div>
+                <div class="top-actions"><button class="icon-btn" type="button"><span class="ti-bell"></span><em>0</em></button><div class="user-menu"><span class="ti-user"></span> <span data-user-role>Directeur</span></div></div>
             </header>
             <section class="dashboard-head">
-                <div><p class="eyebrow">Mes rapports</p><h1>Rapports pédagogiques</h1><p>Consultez les rapports de votre activité ou ceux partagés par l'inspection.</p></div>
+                <div><p class="eyebrow">Consultation école</p><h1>Rapports de l'école</h1><p>Consultez les rapports d'inspection produits pour votre école.</p></div>
                 <div class="period"><span class="ti-files"></span> Rapports</div>
             </section>
             <section class="panel">
-                <div class="panel-head"><h2>Liste des rapports</h2></div>
-                <div class="panel-copy">Les rapports disponibles sont récupérés dynamiquement depuis l'API.</div>
+                <div class="panel-head"><h2>Rapports d'inspection</h2></div>
+                <div class="panel-copy">Les rapports publiés depuis le backend sont affichés ici, avec lien de consultation et téléchargement.</div>
                 <div data-section-content></div>
             </section>
         </main>
