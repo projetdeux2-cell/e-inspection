@@ -124,38 +124,42 @@
             }
         }
 
-        await loadSchools();
-        await loadTeacher();
+        async function initTeacherForm() {
+            await loadSchools();
+            await loadTeacher();
 
-        form?.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const payload = {
-                name: form.name.value,
-                email: form.email.value,
-                phone: form.phone.value,
-                grade: form.elements.grade.value,
-                school_id: 1
-            };
+            form?.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const payload = {
+                    name: form.name.value,
+                    email: form.email.value,
+                    phone: form.phone.value,
+                    grade: form.elements.grade.value,
+                    school_id: parseInt(form.elements.school_id.value, 10) || null
+                };
 
-            if (form.password.value) {
-                payload.password = form.password.value;
-            }
-
-            try {
-                if (message) message.textContent = 'Enregistrement en cours...';
-                if (teacherId) {
-                    await window.EducInspectApi.updateResource('teachers', teacherId, payload);
-                    if (message) message.textContent = 'Enseignant mis à jour avec succès.';
-                } else {
-                    await window.EducInspectApi.createResource('teachers', payload);
-                    if (message) message.textContent = 'Enseignant créé avec succès.';
+                if (form.password.value) {
+                    payload.password = form.password.value;
                 }
-                if (form.password) form.password.value = '';
-                window.location.href = 'ecole-enseignants.html';
-            } catch (error) {
-                if (message) message.textContent = error.message || 'Erreur pendant la création.';
-            }
-        });
+
+                try {
+                    if (message) message.textContent = 'Enregistrement en cours...';
+                    if (teacherId) {
+                        await window.EducInspectApi.updateResource('teachers', teacherId, payload);
+                        if (message) message.textContent = 'Enseignant mis à jour avec succès.';
+                    } else {
+                        await window.EducInspectApi.createResource('teachers', payload);
+                        if (message) message.textContent = 'Enseignant créé avec succès.';
+                    }
+                    if (form.password) form.password.value = '';
+                    window.location.href = 'ecole-enseignants.html';
+                } catch (error) {
+                    if (message) message.textContent = error.message || 'Erreur pendant la création.';
+                }
+            });
+        }
+
+        initTeacherForm();
     </script>
 </body>
 </html>

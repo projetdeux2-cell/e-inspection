@@ -9,9 +9,15 @@ use Illuminate\Support\Facades\Hash;
 
 class TeacherController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Teacher::with(['school', 'user'])->latest()->paginate(20);
+        $query = Teacher::with(['school', 'user'])->latest();
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->query('user_id'));
+        }
+
+        return $query->paginate(20);
     }
 
     public function store(Request $request)
