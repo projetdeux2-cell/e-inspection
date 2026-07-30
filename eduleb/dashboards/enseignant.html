@@ -41,7 +41,7 @@
 				<section class="dashboard-head">
 					<div><p class="eyebrow">Espace enseignant</p><h1>Mes observations pedagogiques</h1><p>L'enseignant consulte les observations qui le concernent et suit ses actions pedagogiques.</p></div>
 					<div style="display:flex;gap:12px;align-items:center;">
-						<div class="period"><span class="ti-book"></span> Classe CP1</div>
+						<div class="period"><span class="ti-book"></span> <span data-teacher-class>Classe CP1</span></div>
 						<a class="btn-primary" href="profile.html"><span class="ti-pencil"></span> Modifier mon profil</a>
 					</div>
 				</section>
@@ -100,5 +100,57 @@
 			}
 		})();
 	</script>
-	</body>
-</html>
+	<script>
+		(async () => {
+			const teacherClassLabel = document.querySelector('[data-teacher-class]');
+			if (!teacherClassLabel) return;
+			teacherClassLabel.textContent = 'Chargement...';
+			console.log('enseignant dashboard: init class loader');
+			if (!window.EducInspectApi?.token) {
+				console.warn('enseignant dashboard: token absent');
+				teacherClassLabel.textContent = 'Classe indisponible';
+				return;
+			}
+
+			const storedUser = JSON.parse(localStorage.getItem('educinspect_user') || '{}');
+			const userId = storedUser?.id;
+			let user = storedUser;
+
+			if (!userId) {
+				try {
+					const response = await window.EducInspectApi.me();
+					user = response.user || response;
+				} catch (e) {
+					console.warn('Impossible de charger l\'utilisateur', e);
+					teacherClassLabel.textContent = 'Classe indisponible';
+					return;
+				}
+			}
+
+			if (!user?.id) {
+				teacherClassLabel.textContent = 'Classe indisponible';
+				return;
+			}
+
+			try {
+				console.log('enseignant dashboard: user id', user.id);
+				const response = await window.EducInspectApi.list('teachers', { user_id: user.id });
+				const teachers = Array.isArray(response) ? response : Array.isArray(response?.data) ? response.data : [];
+				console.log('enseignant dashboard: teachers response', teachers);
+				const teacher = teachers[0];
+				if (teacher?.grade) {
+					teacherClassLabel.textContent = `Classe ${teacher.grade}`;
+				} else if (teacher?.school?.name) {
+					teacherClassLabel.textContent = teacher.school.name;
+				} else if (teacher?.name) {
+					teacherClassLabel.textContent = teacher.name;
+				} else {
+					teacherClassLabel.textContent = 'Classe indisponible';
+				}
+				teacherClassLabel.dataset.loaded = 'true';
+			} catch (e) {
+				console.warn('Impossible de charger la classe enseignant', e);
+				teacherClassLabel.textContent = 'Classe indisponible';
+			}
+		})();
+	</script>
