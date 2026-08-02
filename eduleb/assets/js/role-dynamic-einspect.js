@@ -407,14 +407,24 @@ async function renderSchoolTeachersPage(root) {
 	try {
 		let schoolId = null;
 		if (user?.id) {
-			const schools = await fetchList('schools', { user_id: user.id });
-			const list = Array.isArray(schools) ? schools : normalizeList(schools);
+			let schools = await fetchList('schools', { user_id: user.id });
+			let list = Array.isArray(schools) ? schools : normalizeList(schools);
+			// fallback to fetch all and filter locally if server filter not supported
+			if ((!list || !list.length) && window.EducInspectApi?.list) {
+				try {
+					const all = normalizeList(await window.EducInspectApi.list('schools'));
+					list = all.filter((s) => (s.user_id && String(s.user_id) === String(user.id)) || (s.user && s.user.id && String(s.user.id) === String(user.id)));
+				} catch (e) {
+					console.warn('Fallback fetching all schools failed', e);
+				}
+			}
 			if (list && list.length) schoolId = list[0].id;
 		}
 		if (schoolId) {
 			teachers = await fetchList('teachers', { school_id: schoolId });
 		} else {
-			teachers = await fetchList('teachers');
+			// No school linked to current user: show empty list (do not expose all teachers)
+			teachers = [];
 		}
 	} catch (e) {
 		console.warn('Erreur lors du chargement des enseignants pour cette école', e);
