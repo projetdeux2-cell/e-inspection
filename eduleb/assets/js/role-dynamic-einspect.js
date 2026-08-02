@@ -622,7 +622,7 @@ function resourceTableHeaders(resource) {
 		users: ["#", "Nom", "Email", "Role", "Action"],
 		departments: ["#", "Departement", "Code", "Chef-lieu", "Action"],
 		communes: ["#", "Commune", "Code", "Departement", "Action"],
-		schools: ["#", "Ecole", "Commune", "Directeur", "Effectif", "Action"],
+		schools: ["#", "Ecole", "Commune", "Directeur / Compte", "Effectif", "Action"],
 		inspectors: ["#", "Inspecteur", "Matricule", "Specialite", "Telephone", "Action"]
 	};
 	return headers[resource] || ["#", "Nom", "Action"];
@@ -657,6 +657,7 @@ function getResourceFields(resource) {
 			{ name: "name", label: "Nom de l'ecole", type: "text", required: true },
 			{ name: "code", label: "Code", type: "text", required: true },
 			{ name: "director_name", label: "Directeur", type: "text", required: false },
+			{ name: "user_id", label: "Compte utilisateur", type: "select", required: false },
 			{ name: "phone", label: "Telephone", type: "text", required: false },
 			{ name: "email", label: "Email", type: "email", required: false },
 			{ name: "student_count", label: "Effectif", type: "number", required: false }
@@ -743,7 +744,7 @@ function renderResourceTable(resource, items) {
 			<td>${index + 1}</td>
 			<td><strong>${safeText(item.name)}</strong><span>${safeText(item.code)}</span></td>
 			<td>${safeText(item.commune?.name)}</td>
-			<td>${safeText(item.director_name)}</td>
+			<td>${safeText(item.director_name)}${item.user || item.user_id ? `<span class="sub">${item.user ? safeText(item.user.name) : `Compte #${safeText(item.user_id)}`}${item.user?.email ? ` (${safeText(item.user.email)})` : ""}</span>` : ""}</td>
 			<td>${safeText(item.student_count)}</td>
 			<td><a class="mini-btn" href="ajouter-ecole.html?id=${item.id}">Modifier</a>
 			<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${item.id}">Supprimer</button></td>

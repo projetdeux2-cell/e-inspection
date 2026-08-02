@@ -38,12 +38,25 @@ async function loadSelectOptions(resource, form) {
 
     if (resource === "schools") {
         const communes = normalizeList(await window.EducInspectApi.list("communes"));
-        const select = form.querySelector("[name='commune_id']");
-        if (!select) return;
-        select.innerHTML = `
-            <option value="">Sélectionner une commune</option>
-            ${communes.map((item) => `<option value="${item.id}">${item.name}</option>`).join("")}
-        `;
+        const communeSelect = form.querySelector("[name='commune_id']");
+        if (communeSelect) {
+            communeSelect.innerHTML = `
+                <option value="">Sélectionner une commune</option>
+                ${communes.map((item) => `<option value="${item.id}">${item.name}</option>`).join("")}
+            `;
+        }
+        const userSelect = form.querySelector("[name='user_id']");
+        if (userSelect) {
+            const users = normalizeList(await window.EducInspectApi.adminUsers());
+            let schoolUsers = users.filter((item) => Array.isArray(item.roles) && item.roles.some((role) => String(role.name).toLowerCase() === "directeur_ecole"));
+            if (!schoolUsers.length) {
+                schoolUsers = users;
+            }
+            userSelect.innerHTML = `
+                <option value="">Sélectionner un compte utilisateur</option>
+                ${schoolUsers.map((item) => `<option value="${item.id}">${item.name} (${item.email})</option>`).join("")}
+            `;
+        }
         return;
     }
 
@@ -99,6 +112,17 @@ async function populateForm(form, resource, item) {
         if (!element) return;
         element.value = value ?? "";
     });
+
+    if (resource === "schools" || resource === "inspectors") {
+        const userField = form.elements.namedItem("user_id");
+        if (userField) {
+            if (item.user?.id) {
+                userField.value = item.user.id;
+            } else if (item.user_id) {
+                userField.value = item.user_id;
+            }
+        }
+    }
 
     if (resource === "users" && Array.isArray(item.roles) && item.roles.length) {
         const roleElement = form.elements.namedItem("role");

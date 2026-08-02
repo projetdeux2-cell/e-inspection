@@ -196,50 +196,19 @@
                     </tbody>
                 </table>
             </section>
+            <section class="panel">
+                <div class="panel-head">
+                    <h3>Aperçu du rapport</h3>
+                </div>
+                <div class="panel report-preview" data-report-preview>
+                    <p>Sélectionnez un rapport pour afficher un aperçu détaillé.</p>
+                </div>
+            </section>
         </main>
     </div>
     <script src="../assets/js/api-einspect.js"></script>
     <script src="../assets/js/role-guard-einspect.js"></script>
     <script src="../assets/js/dashboard-einspect.js"></script>
     <script src="../assets/js/role-dynamic-einspect.js"></script>
-    <script>
-        (async () => {
-            const body = document.querySelector("[data-reports-body]");
-            if (!body) return;
-            const inbox = getInboxReports ? getInboxReports() : [];
-            if (inbox.length) {
-                const empty = body.querySelector(".empty-state");
-                const rows = inbox.map(r => {
-                    const score = r.global_score || 0;
-                    const c = score >= 80 ? "#10B981" : score >= 60 ? "#3C82F6" : score >= 40 ? "#F97316" : "#EF4444";
-                    return `<tr><td><strong>${r.reference}</strong><span class="sub">${r.school}</span></td><td>${r.date}</td><td class="score-cell" style="color:${c}">${score}%</td><td><span class="badge ${badgeClass(r.status)}">${r.status}</span></td><td><button class="mini-btn" type="button" data-preview="${r.reference}">Apercu</button></td></tr>`;
-                }).join("");
-                body.innerHTML = rows;
-                const count = document.querySelector("[data-reports-count]");
-                if (count) count.textContent = `${inbox.length} rapport(s)`;
-                return;
-            }
-            try {
-                const data = await window.EducInspectApi.list("inspections");
-                const reports = Array.isArray(data) ? data : (data?.data || []);
-                if (!reports.length) {
-                    const demo = [
-                        { reference: "RIP-2026-001", school: "Ecole Primaire A", date: "2026-07-15", global_score: 85, status: "Signe" },
-                        { reference: "RIP-2026-002", school: "Ecole Primaire B", date: "2026-07-10", global_score: 62, status: "En validation" },
-                        { reference: "RIP-2026-003", school: "Groupe Scolaire C", date: "2026-07-05", global_score: 45, status: "Planifiee" }
-                    ];
-                    const rows = demo.map(r => {
-                        const c = r.global_score >= 80 ? "#10B981" : r.global_score >= 60 ? "#3C82F6" : r.global_score >= 40 ? "#F97316" : "#EF4444";
-                        return `<tr><td><strong>${r.reference}</strong><span class="sub">${r.school}</span></td><td>${r.date}</td><td class="score-cell" style="color:${c}">${r.global_score}%</td><td><span class="badge ${badgeClass(r.status)}">${r.status}</span></td><td><button class="mini-btn" type="button" data-preview="${r.reference}">Apercu</button></td></tr>`;
-                    }).join("");
-                    body.innerHTML = rows;
-                    const count = document.querySelector("[data-reports-count]");
-                    if (count) count.textContent = `${demo.length} rapport(s)`;
-                }
-            } catch(e) {
-                console.warn("Rapports inspecteur indisponibles", e);
-            }
-        })();
-    </script>
 </body>
 </html>

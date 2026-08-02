@@ -40,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('missions', MissionController::class);
     Route::apiResource('criteria', CriterionController::class);
     Route::apiResource('inspections', InspectionController::class);
+    Route::post('/reports/export-pdf', [InspectionController::class, 'exportPdf']);
     Route::apiResource('evaluations', EvaluationController::class);
     Route::apiResource('recommendations', RecommendationController::class);
     Route::apiResource('follow-ups', FollowUpController::class);

@@ -3,13 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\School;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 class SchoolController extends Controller
 {
     public function index()
     {
-        return School::with('commune.department')->latest()->paginate(20);
+        return School::with(['commune.department', 'user'])->latest()->paginate(20);
     }
 
     public function store(Request $request)
@@ -24,16 +29,34 @@ class SchoolController extends Controller
             'longitude' => ['nullable', 'numeric'],
             'director_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'student_count' => ['nullable', 'integer', 'min:0'],
+            'user_id' => ['nullable', 'exists:users,id'],
         ]);
 
-        return response()->json(School::create($data), 201);
+        return DB::transaction(function () use ($data) {
+            $school = School::create($data);
+
+            if (empty($data['user_id']) && !empty($data['director_name']) && !empty($data['email'])) {
+                $role = Role::firstOrCreate(['name' => 'directeur_ecole', 'guard_name' => 'web']);
+
+                $user = User::create([
+                    'name' => $data['director_name'],
+                    'email' => $data['email'],
+                    'password' => Hash::make('password123'),
+                ]);
+
+                $user->assignRole($role);
+                $school->update(['user_id' => $user->id]);
+            }
+
+            return response()->json($school->load(['commune.department', 'user']), 201);
+        });
     }
 
     public function show(School $school)
     {
-        return $school->load('commune.department', 'teachers', 'missions');
+        return $school->load('commune.department', 'teachers', 'missions', 'user');
     }
 
     public function update(Request $request, School $school)
@@ -50,11 +73,12 @@ class SchoolController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
             'student_count' => ['nullable', 'integer', 'min:0'],
+            'user_id' => ['nullable', 'exists:users,id'],
         ]);
 
         $school->update($data);
 
-        return $school->fresh('commune.department');
+        return $school->fresh(['commune.department', 'user']);
     }
 
     public function destroy(School $school)

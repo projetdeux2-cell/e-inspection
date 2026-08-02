@@ -116,7 +116,10 @@
 						<h1>Dashboard direction</h1>
 						<p>La direction suit les inspections, valide les rapports et contrôle l’application des recommandations.</p>
 					</div>
-					<div class="period"><span class="ti-map-alt"></span> Départements</div>
+						<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+							<div class="period"><span class="ti-map-alt"></span> Départements</div>
+							<a href="ajouter-ecole.html" class="btn btn-primary">Créer une école</a>
+						</div>
 				</section>
 				<section class="stats-grid">
 					<div class="stat-card blue"><span class="ti-clipboard"></span><div><p>Missions</p><strong data-api-stat="missions">0</strong><small>Planification globale</small></div></div>
@@ -148,13 +151,30 @@
 								<span class="ti-calendar"></span>
 								<div><strong>Consulter le calendrier</strong><small>Planning des inspections</small></div>
 							</a>
-										<a class="quick-item" href="consultation-rapports.html">
+							<a class="quick-item" href="ajouter-ecole.html">
+								<span class="ti-home"></span>
+								<div><strong>Créer une école</strong><small>Ajouter un établissement scolaire</small></div>
+							</a>
+							<a class="quick-item" href="consultation-rapports.html">
 								<span class="ti-files"></span>
 								<div><strong>Voir les rapports</strong><small>Validation et suivi</small></div>
 							</a>
 						</div>
 					</div>
 				</section>
+			<section class="workspace-grid">
+				<div class="panel table-panel">
+					<div class="panel-head">
+						<h2>Liste des écoles</h2>
+						<a href="admin-ecoles.html">Voir tout</a>
+					</div>
+					<div style="padding:0 24px 12px"><input type="text" data-school-search placeholder="Filtrer par nom, commune..." style="width:100%;padding:10px 14px;border:1px solid #e4e9f0;border-radius:12px;font-size:14px;background:#f8fafc;font-family:'Mulish',sans-serif"></div>
+					<table class="data-table">
+						<thead><tr><th>#</th><th>École</th><th>Commune</th><th>Directeur</th><th>Statut</th></tr></thead>
+						<tbody data-schools-body><tr><td colspan="5">Chargement...</td></tr></tbody>
+					</table>
+				</div>
+			</section>
 			</main>
 		</div>
 		<script src="../assets/js/api-einspect.js?v=20260730-direction-fix-2"></script>
@@ -242,6 +262,46 @@
 			} catch (e) {
 				console.warn("Chargement dashboard direction impossible", e);
 			}
+		})();
+	</script>
+	<script>
+		(async () => {
+			const body = document.querySelector("[data-schools-body]");
+			const search = document.querySelector("[data-school-search]");
+			if (!body) return;
+			let allSchools = [];
+			function render(list) {
+				if (!list.length) {
+					body.innerHTML = '<tr><td colspan="5">Aucune ecole trouvee.</td></tr>';
+					return;
+				}
+				body.innerHTML = list.map((s, i) => {
+					const name = s.name || "—";
+					const commune = s.commune?.name || s.commune_name || "—";
+					const director = s.director_name || "—";
+					const status = s.status || "Active";
+					const badge = String(status).toLowerCase().includes("active") ? "success" : "warning";
+					return `<tr><td>${i+1}</td><td><strong>${name}</strong></td><td>${commune}</td><td>${director}</td><td><mark class="badge ${badge}">${status}</mark></td></tr>`;
+				}).join("");
+			}
+			try {
+				const raw = await window.EducInspectApi.list("schools");
+				allSchools = Array.isArray(raw) ? raw : (raw?.data || []);
+			} catch(e) {
+				allSchools = [
+					{ name: "Ecole Primaire A", commune: { name: "Cotonou" }, director_name: "M. Ahouansou", status: "Active" },
+					{ name: "Ecole Primaire B", commune: { name: "Abomey-Calavi" }, director_name: "Mme Dossa", status: "Active" },
+					{ name: "Groupe Scolaire C", commune: { name: "Porto-Novo" }, director_name: "M. Houndegbe", status: "Inactive" },
+					{ name: "EPP Centre", commune: { name: "Lokossa" }, director_name: "Mme Tossou", status: "Active" },
+					{ name: "Ecole Maternelle D", commune: { name: "Parakou" }, director_name: "—", status: "Active" }
+				];
+			}
+			render(allSchools);
+			search?.addEventListener("input", () => {
+				const q = search.value.toLowerCase().trim();
+				if (!q) return render(allSchools);
+				render(allSchools.filter(s => [s.name, s.commune?.name, s.director_name].join(" ").toLowerCase().includes(q)));
+			});
 		})();
 	</script>
 	</body>

@@ -69,6 +69,89 @@ function parseDate(value) {
 	return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("fr-FR");
 }
 
+function getCurrentUser() {
+	try {
+		return JSON.parse(localStorage.getItem("educinspect_user") || "{}") || {};
+	} catch (error) {
+		return {};
+	}
+}
+
+function getCurrentInspectorSignature() {
+	const user = getCurrentUser();
+	return localStorage.getItem("educinspect_signature") || user.signature_path || "";
+}
+function normalizeText(value) {
+	return String(value || "").normalize("NFD").replace(/[\x00-\x7f]/g, (char) => char).replace(/[\x00-\x1f]/g, "").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function isSigned(status) {
+	return normalizeText(status).includes("signe");
+}
+
+function hasInspectorSignature(report) {
+	return Boolean(report?.signature_path || getCurrentInspectorSignature());
+}
+
+function isSignedReport(report) {
+	return isSigned(report?.status) && hasInspectorSignature(report);
+}
+
+function reportActionButtons(report) {
+	const reportKey = report.id || report.reference || report.ref || "";
+	const previewButton = `<button class="mini-btn" type="button" data-preview="${reportKey}">Apercu</button>`;
+	if (isSigned(report.status)) {
+		return `<div class="action-stack">${previewButton}</div>`;
+	}
+	return `<div class="action-stack"><button class="mini-btn" type="button" data-edit-report="${reportKey}">Modifier</button><button class="mini-btn" type="button" data-delete-report="${reportKey}">Supprimer</button>${previewButton}</div>`;
+}
+
+function getSavedReportIndex(reportId) {
+	const reports = getInboxReports();
+	return reports.findIndex((item) => String(item.id) === String(reportId));
+}
+
+function updateSavedReport(report) {
+	const reports = getInboxReports();
+	const index = reports.findIndex((item) => String(item.id) === String(report.id));
+	if (index >= 0) {
+		reports[index] = report;
+	} else {
+		reports.unshift(report);
+	}
+	localStorage.setItem(INBOX_KEY, JSON.stringify(reports));
+}
+
+function deleteSavedReport(reportId) {
+	const reports = getInboxReports();
+	const remaining = reports.filter((item) => String(item.id) !== String(reportId));
+	localStorage.setItem(INBOX_KEY, JSON.stringify(remaining));
+}
+
+function clearPendingEditReport() {
+	localStorage.removeItem("educinspect_edit_report");
+}
+
+function persistPendingEditReport(report) {
+	localStorage.setItem("educinspect_edit_report", JSON.stringify(report));
+}
+
+function getPendingEditReport() {
+	try {
+		return JSON.parse(localStorage.getItem("educinspect_edit_report") || "null");
+	} catch {
+		return null;
+	}
+}
+
+function scoreColor(score) {
+	if (typeof score !== "number") return "#6b7280";
+	if (score >= 80) return "#10B981";
+	if (score >= 60) return "#3C82F6";
+	if (score >= 40) return "#F97316";
+	return "#EF4444";
+}
+
 function mapMission(item) {
 	return {
 		school: item.school?.name || item.school_name || "Ecole non renseignee",
@@ -155,11 +238,12 @@ function renderInspectorReports(list = []) {
 		const score = report.global_score || report.score || 0;
 		return `
 			<tr>
-				<td><strong>${report.reference || report.ref || `RIP-${report.id || "?"}`}</strong><span class="sub">${report.school || report.mission?.school?.name || ""}</span></td>
+				<td><strong>${report.reference || report.ref || `RIP-${report.id || "?"}`}</strong></td>
+				<td><span class="sub">${report.school || report.mission?.school?.name || "-"}</span></td>
 				<td>${report.date || report.inspection_date || "-"}</td>
 				<td class="score-cell" style="color:${scoreColor(score)}">${score}%</td>
 				<td><span class="badge ${badgeClass(report.status)}">${report.status || "-"}</span></td>
-				<td><button class="mini-btn" type="button" data-preview="${report.reference || report.ref}">Apercu</button></td>
+				<td>${reportActionButtons(report)}</td>
 			</tr>
 		`;
 	}).join("");
@@ -171,7 +255,7 @@ function renderInspectorSummary(reports = []) {
 	const signedEl = document.querySelector("[data-signed]");
 	const avgEl = document.querySelector("[data-avg-score]");
 	if (totalEl) totalEl.textContent = reports.length;
-	if (signedEl) signedEl.textContent = reports.filter((r) => String(r.status || "").toLowerCase().includes("signe")).length;
+    if (signedEl) signedEl.textContent = reports.filter((r) => isSigned(r.status)).length;
 	const scores = reports.map((r) => Number(r.global_score || r.score || 0)).filter((s) => s > 0);
 	const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
 	if (avgEl) avgEl.textContent = avg + "%";
@@ -193,6 +277,7 @@ function setupInspectorReportsPage() {
 		if (window.InspectorReportPage.currentFilter !== "all") {
 			filtered = filtered.filter((report) => String(report.status || "").toLowerCase().includes(window.InspectorReportPage.currentFilter));
 		}
+		filtered = filtered.filter(isSignedReport);
 		if (query) {
 			filtered = filtered.filter((report) => {
 				const text = [report.reference, report.ref, report.school, report.status, report.mission?.school?.name].join(" ").toLowerCase();
@@ -213,17 +298,62 @@ function setupInspectorReportsPage() {
 
 	search?.addEventListener("input", renderFilteredReports);
 
-	function loadReports() {
-		if (!window.EducInspectApi?.list) return Promise.resolve([]);
-		return window.EducInspectApi.list("inspections").then((data) => {
-			return Array.isArray(data) ? data : (data?.data || []);
-		}).catch(() => []);
+	const inboxReports = getInboxReports();
+	if (inboxReports.length) {
+		window.InspectorReportPage.allReports = inboxReports.map((report) => ({
+			...report,
+			signature_path: report.signature_path || getCurrentInspectorSignature()
+		})).filter(isSignedReport);
+		renderInspectorSummary(window.InspectorReportPage.allReports);
+		renderFilteredReports();
 	}
 
-	loadReports().then((reports) => {
-		window.InspectorReportPage.allReports = reports;
-		renderInspectorSummary(reports);
-		renderFilteredReports();
+	if (window.EducInspectApi?.list) {
+		window.EducInspectApi.list("inspections").then((data) => {
+			const reports = (Array.isArray(data) ? data : (data?.data || [])).map((report) => ({
+				...report,
+				signature_path: report.signature_path || getCurrentInspectorSignature()
+			})).filter(isSignedReport);
+			if (!reports.length && window.InspectorReportPage.allReports.length) return;
+			window.InspectorReportPage.allReports = reports;
+			renderInspectorSummary(window.InspectorReportPage.allReports);
+			renderFilteredReports();
+		}).catch(() => {});
+	}
+
+	body.addEventListener("click", async (event) => {
+		const previewBtn = event.target.closest("[data-preview]");
+		const editBtn = event.target.closest("[data-edit-report]");
+		const deleteBtn = event.target.closest("[data-delete-report]");
+		if (previewBtn) {
+			event.preventDefault();
+			const reportKey = previewBtn.dataset.preview;
+			const report = window.InspectorReportPage.allReports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
+			if (report) {
+				updateReportPreview(report);
+			}
+		}
+		if (editBtn) {
+			event.preventDefault();
+			const reportKey = editBtn.dataset.editReport;
+			const report = window.InspectorReportPage.allReports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
+			if (report && !isSigned(report.status)) {
+				persistPendingEditReport(report);
+				window.location.href = "creer-rapport-inspecteur.html";
+			}
+		}
+		if (deleteBtn) {
+			event.preventDefault();
+			const reportKey = deleteBtn.dataset.deleteReport;
+			const report = window.InspectorReportPage.allReports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
+			if (report && !isSigned(report.status)) {
+				if (window.confirm('Voulez-vous supprimer ce rapport ?')) {
+					deleteSavedReport(reportKey);
+					window.InspectorReportPage.allReports = window.InspectorReportPage.allReports.filter((item) => String(item.id) !== String(reportKey) && String(item.reference) !== String(reportKey) && String(item.ref) !== String(reportKey));
+					renderFilteredReports();
+				}
+			}
+		}
 	});
 }
 
@@ -305,12 +435,14 @@ function buildReportPayload(form) {
 	const gestion = Number(data.get("gestion") || 0);
 	const documents = Number(data.get("documents") || 0);
 	const score = Math.round((preparation + pedagogie + gestion + documents) / 4);
+	const status = data.get("status") || "En validation";
+	const signaturePath = isSigned(status) ? getCurrentInspectorSignature() : undefined;
 	return {
 		reference: data.get("reference") || `RIP-${new Date().getFullYear()}-${Math.floor(Math.random() * 900 + 100)}`,
 		school: data.get("school") || "Ecole",
 		teacher: data.get("teacher") || "",
 		date: data.get("date") || new Date().toISOString().slice(0, 10),
-		status: data.get("status") || "En validation",
+		status,
 		preparation,
 		pedagogie,
 		gestion,
@@ -319,7 +451,8 @@ function buildReportPayload(form) {
 		recommendations: data.get("recommendations") || "",
 		notes: data.get("notes") || "",
 		global_score: score,
-		id: Date.now()
+		signature_path: signaturePath,
+		id: data.get("report_id") ? data.get("report_id") : Date.now()
 	};
 }
 
@@ -337,6 +470,7 @@ function saveReportToInbox(report) {
 }
 
 function renderReportDocument(report) {
+	const signaturePath = report.signature_path || getCurrentInspectorSignature();
 	return `
 		<div class="report-doc">
 			<h3>Rapport d'inspection pedagogique</h3>
@@ -353,6 +487,7 @@ function renderReportDocument(report) {
 			<div><strong>Observations</strong><p>${report.observations || "Aucune observation saisie."}</p></div>
 			<div><strong>Recommandations</strong><p>${report.recommendations || "Aucune recommandation."}</p></div>
 			<div><strong>Notes</strong><p>${report.notes || "Aucune note."}</p></div>
+			${signaturePath ? `<div style="margin-top:24px;"><strong>Signature</strong><div><img src="${signaturePath}" alt="Signature inspecteur" style="max-width:240px;border:1px solid #e4e9f0;border-radius:12px;padding:12px;margin-top:10px;" /></div></div>` : ""}
 		</div>
 	`;
 }
@@ -395,99 +530,54 @@ function updateReportBuilderPreviewLabels(form) {
 	});
 }
 
-function exportReportAsPdf(report) {
-	const evalClass = report.global_score >= 80 ? "excellent" : report.global_score >= 60 ? "bien" : report.global_score >= 40 ? "moyen" : "insuffisant";
-	const evalLabel = report.global_score >= 80 ? "Excellent" : report.global_score >= 60 ? "Bien" : report.global_score >= 40 ? "Moyen" : "Insuffisant";
-	const printable = `
-		<!DOCTYPE html>
-		<html lang="fr">
-		<head>
-			<meta charset="UTF-8">
-			<title>Rapport ${report.reference}</title>
-			<style>
-				@page { margin: 20mm 15mm; }
-				body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; margin: 0; color: #0a1e3c; }
-				.header { background: linear-gradient(135deg, #0a1e3c 0%, #1a3a5c 100%); color: #fff; padding: 32px 40px; }
-				.header h1 { margin: 0 0 4px; font-size: 26px; font-weight: 800; }
-				.header p { margin: 0; font-size: 14px; opacity: .8; }
-				.content { padding: 32px 40px; }
-				.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
-				.meta-item { }
-				.meta-item strong { display: block; font-size: 11px; text-transform: uppercase; color: #6b7a93; margin-bottom: 2px; }
-				.meta-item span { font-size: 15px; font-weight: 700; color: #0a1e3c; }
-				.score-banner { display: flex; align-items: center; gap: 24px; padding: 24px; border-radius: 14px; margin-bottom: 28px; }
-				.score-banner.excellent { background: #ecfdf5; border: 1px solid #a7f3d0; }
-				.score-banner.bien { background: #eff6ff; border: 1px solid #bfdbfe; }
-				.score-banner.moyen { background: #fff7ed; border: 1px solid #fed7aa; }
-				.score-banner.insuffisant { background: #fef2f2; border: 1px solid #fecaca; }
-				.score-banner .score-number { font-size: 48px; font-weight: 900; }
-				.score-banner.excellent .score-number { color: #059669; }
-				.score-banner.bien .score-number { color: #2563eb; }
-				.score-banner.moyen .score-number { color: #ea580c; }
-				.score-banner.insuffisant .score-number { color: #dc2626; }
-				.score-banner .score-label { }
-				.score-banner .score-label strong { font-size: 18px; display: block; }
-				.score-banner .score-label small { font-size: 13px; color: #6b7a93; }
-				h2 { font-size: 18px; font-weight: 800; margin: 0 0 16px; color: #0a1e3c; }
-				.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
-				.detail-item { display: flex; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border-radius: 10px; }
-				.detail-item .label { font-size: 14px; color: #475467; }
-				.detail-item .value { font-weight: 800; color: #0a1e3c; }
-				.section { margin-bottom: 24px; }
-				.section h3 { font-size: 15px; font-weight: 700; margin: 0 0 8px; color: #0a1e3c; }
-				.section p, .section li { font-size: 14px; line-height: 1.6; color: #475467; }
-				.section ul { padding-left: 20px; margin: 0; }
-				.footer { text-align: center; padding: 20px 40px; border-top: 1px solid #eef2f7; font-size: 12px; color: #9aaec5; }
-			</style>
-		</head>
-		<body>
-			<div class="header">
-				<h1>Rapport d'inspection pedagogique</h1>
-				<p>Ministere des Enseignements Maternel et Primaire - EducInspect</p>
-			</div>
-			<div class="content">
-				<div class="meta-grid">
-					<div class="meta-item"><strong>Reference</strong><span>${report.reference}</span></div>
-					<div class="meta-item"><strong>Date d'inspection</strong><span>${report.date}</span></div>
-					<div class="meta-item"><strong>Ecole</strong><span>${report.school}</span></div>
-					<div class="meta-item"><strong>Statut</strong><span>${report.status}</span></div>
-					${report.teacher ? `<div class="meta-item"><strong>Enseignant</strong><span>${report.teacher}</span></div>` : ""}
-				</div>
-				<div class="score-banner ${evalClass}">
-					<div class="score-number">${report.global_score}%</div>
-					<div class="score-label"><strong>${evalLabel}</strong><small>Score global d'inspection</small></div>
-				</div>
-				<h2>Details de l'evaluation</h2>
-				<div class="detail-grid">
-					<div class="detail-item"><span class="label">Preparation des cours</span><span class="value">${report.preparation}%</span></div>
-					<div class="detail-item"><span class="label">Pedagogie et methodes</span><span class="value">${report.pedagogie}%</span></div>
-					<div class="detail-item"><span class="label">Gestion de classe</span><span class="value">${report.gestion}%</span></div>
-					<div class="detail-item"><span class="label">Documents scolaires</span><span class="value">${report.documents}%</span></div>
-				</div>
-				<div class="section">
-					<h3>Observations</h3>
-					<p>${report.observations || "Aucune observation saisie."}</p>
-				</div>
-				<div class="section">
-					<h3>Recommandations</h3>
-					${report.recommendations ? `<ul>${report.recommendations.split("\\n").filter(Boolean).map(r => `<li>${r}</li>`).join("")}</ul>` : "<p>Aucune recommandation.</p>"}
-				</div>
-				<div class="section">
-					<h3>Notes techniques</h3>
-					<p>${report.notes || "Aucune note."}</p>
-				</div>
-			</div>
-			<div class="footer">
-				<p>Document genere par EducInspect &bull; ${new Date().toLocaleDateString("fr-FR")}</p>
-			</div>
-			<script>window.onload = function() { window.print(); };</script>
-		</body>
-		</html>
-	`;
-	const win = window.open("", "_blank");
-	if (!win) return;
-	win.document.write(printable);
-	win.document.close();
+async function exportReportAsPdf(report) {
+	if (!report) return;
+	if (isSigned(report.status) && !report.signature_path) {
+		window.alert("Ce rapport est signe, mais votre signature n'est pas encore enregistree. Allez dans Parametres pour l'ajouter avant de telecharger.");
+		return;
+	}
+
+	const exportButton = document.querySelector("[data-export-report]");
+	const originalLabel = exportButton?.textContent || "Exporter PDF";
+	if (exportButton) {
+		exportButton.disabled = true;
+		exportButton.textContent = "Generation du PDF...";
+	}
+
+	try {
+		const blob = await EducInspectApi.downloadPdf("/reports/export-pdf", {
+			reference: report.reference,
+			school: report.school,
+			teacher: report.teacher,
+			date: report.date,
+			status: report.status,
+			preparation: report.preparation,
+			pedagogie: report.pedagogie,
+			gestion: report.gestion,
+			documents: report.documents,
+			observations: report.observations,
+			recommendations: report.recommendations,
+			notes: report.notes,
+			global_score: report.global_score,
+			signature_path: report.signature_path
+		});
+
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `rapport-${(report.reference || 'rapport').replace(/[^a-zA-Z0-9-_]/g, '-')}.pdf`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
+	} catch (error) {
+		window.alert("Impossible de generer le PDF : " + (error?.message || "erreur inconnue"));
+	} finally {
+		if (exportButton) {
+			exportButton.disabled = false;
+			exportButton.textContent = originalLabel;
+		}
+	}
 }
 
 function getAvailableInspectionSchools(missions) {
@@ -548,6 +638,7 @@ function setupReportBuilder() {
 	if (!form) return;
 	const exportButton = document.querySelector("[data-export-report]");
 	const schoolSelect = form.querySelector("select[name='school']");
+	const reportIdField = form.querySelector("[name='report_id']");
 	const searchInput = document.querySelector("[data-report-search]");
 	let availableSchools = [];
 
@@ -556,8 +647,35 @@ function setupReportBuilder() {
 		updateReportPreview(buildReportPayload(form));
 	};
 
+	const pendingEdit = getPendingEditReport();
+
 	loadReportSchools(schoolSelect).then((schools) => {
 		availableSchools = schools;
+		if (pendingEdit) {
+			if (pendingEdit.school) {
+				form.elements.school.value = pendingEdit.school;
+			}
+			if (pendingEdit.reference) form.elements.reference.value = pendingEdit.reference;
+			if (pendingEdit.teacher) form.elements.teacher.value = pendingEdit.teacher;
+			if (pendingEdit.date) form.elements.date.value = pendingEdit.date;
+			if (pendingEdit.status) form.elements.status.value = pendingEdit.status;
+			if (pendingEdit.observations) form.elements.observations.value = pendingEdit.observations;
+			if (pendingEdit.recommendations) form.elements.recommendations.value = pendingEdit.recommendations;
+			if (pendingEdit.notes) form.elements.notes.value = pendingEdit.notes;
+			if (typeof pendingEdit.preparation !== 'undefined') form.elements.preparation.value = pendingEdit.preparation;
+			if (typeof pendingEdit.pedagogie !== 'undefined') form.elements.pedagogie.value = pendingEdit.pedagogie;
+			if (typeof pendingEdit.gestion !== 'undefined') form.elements.gestion.value = pendingEdit.gestion;
+			if (typeof pendingEdit.documents !== 'undefined') form.elements.documents.value = pendingEdit.documents;
+			if (reportIdField && pendingEdit.id) {
+				reportIdField.value = pendingEdit.id;
+			}
+                    if (pendingEdit.status && isSigned(pendingEdit.status)) {
+				form.querySelectorAll("input, select, textarea, button[type='submit']").forEach((input) => {
+					if (input !== exportButton) input.disabled = true;
+				});
+			}
+			update();
+		}
 	});
 
 	const filterSchoolOptions = () => {
@@ -576,10 +694,18 @@ function setupReportBuilder() {
 	form.addEventListener("submit", (event) => {
 		event.preventDefault();
 		const report = buildReportPayload(form);
+		if (isSigned(report.status) && !report.signature_path) {
+			const goToProfile = window.confirm("Ce rapport est marque comme signe, mais votre signature n'est pas encore enregistree. Voulez-vous aller dans Parametres pour l'ajouter ?");
+			if (goToProfile) {
+				window.location.href = "profile.html";
+			}
+			return;
+		}
 		dashboardState.reports.unshift(report);
 		appendReportRow(report);
 		updateReportPreview(report);
 		saveReportToInbox(report);
+		clearPendingEditReport();
 		const submitButton = form.querySelector("button[type='submit']");
 		if (submitButton) {
 			submitButton.textContent = "Rapport envoye (Direction, Ecole, Enseignant)";
@@ -903,6 +1029,7 @@ async function loadInspectorDashboard() {
 
 	const missionsBody = document.querySelector("[data-missions-body]");
 	const recsList = document.querySelector("[data-recommendations]");
+	if (!missionsBody && !recsList) return;
 
 	const [missionsData, inspectionsData, recsData] = await Promise.all([
 		fetchList("missions"),
@@ -999,14 +1126,7 @@ function setupReportPreview() {
 
 async function initializeDashboard() {
 	const isInspectorDashboard = document.body.dataset.requiredRole === "inspecteur";
-	await loadRemoteDashboardData();
-	if (isInspectorDashboard) {
-		await loadInspectorDashboard();
-	} else {
-		renderMissions();
-		renderReports();
-		renderRecommendations();
-	}
+
 	setupSearch();
 	setupMissionForm();
 	setupInspectionScore();
@@ -1015,7 +1135,16 @@ async function initializeDashboard() {
 	setupReportPreview();
 	setupLogout();
 	setupAdminProfileForm();
-	if (!isInspectorDashboard) await loadApiDashboard();
+
+	if (isInspectorDashboard) {
+		await loadInspectorDashboard();
+	} else {
+		await loadRemoteDashboardData();
+		renderMissions();
+		renderReports();
+		renderRecommendations();
+		await loadApiDashboard();
+	}
 }
 
 window.addEventListener("DOMContentLoaded", initializeDashboard);

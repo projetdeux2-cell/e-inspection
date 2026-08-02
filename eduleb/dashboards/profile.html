@@ -78,6 +78,13 @@
                                 <label for="password">Nouveau mot de passe</label>
                                 <input id="password" name="password" type="password" class="form-control" placeholder="Laisser vide pour conserver l'actuel">
                             </div>
+                            <div class="form-group">
+                                <label for="signature">Signature (image)</label>
+                                <input id="signature" name="signature" type="file" accept="image/*" class="form-control">
+                                <div class="signature-preview" style="margin-top:12px;">
+                                    <img id="signaturePreview" alt="Aperçu de la signature" style="display:none;max-width:240px;border:1px solid #e4e9f0;border-radius:12px;padding:8px;" />
+                                </div>
+                            </div>
                             <div class="form-actions">
                                 <button class="btn-primary" type="submit"><span class="ti-save"></span> Enregistrer</button>
                                 <a class="btn-secondary" id="backToDashboard" href="../index.html"><span class="ti-arrow-left"></span> Retour</a>
@@ -159,6 +166,7 @@
                     { label: 'Deconnexion', icon: 'ti-power-off', href: 'deconnexion.html' }
                 ],
                 enseignant: [
+                    { label: 'Enseignant', icon: 'ti-blackboard', href: 'enseignant.html' },
                     { label: 'Rapports', icon: 'ti-files', href: 'enseignant-rapport.html' },
                     { label: 'Observations', icon: 'ti-comments', href: 'enseignant-observation.html' },
                     { label: 'Actions pedagogiques', icon: 'ti-check-box', href: 'enseignant-Actions-pedagogiques.html' },
@@ -175,9 +183,31 @@
 
         const form = document.querySelector('[data-profile-form]');
         const message = document.querySelector('[data-profile-message]');
+        const signatureInput = document.getElementById('signature');
+        const signaturePreview = document.getElementById('signaturePreview');
+
+        const storedSignature = user.signature_path || localStorage.getItem('educinspect_signature');
+        if (storedSignature && signaturePreview) {
+            signaturePreview.src = storedSignature;
+            signaturePreview.style.display = 'block';
+        }
+
         if (form) {
             if (user.name) form.elements.name.value = user.name;
             if (user.email) form.elements.email.value = user.email;
+
+            signatureInput?.addEventListener('change', (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    if (signaturePreview) {
+                        signaturePreview.src = reader.result;
+                        signaturePreview.style.display = 'block';
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
 
             form.addEventListener('submit', async (event) => {
                 event.preventDefault();
@@ -190,6 +220,9 @@
                     email: form.elements.email.value
                 };
                 if (form.elements.password.value) payload.password = form.elements.password.value;
+                if (signaturePreview?.src) {
+                    payload.signature_path = signaturePreview.src;
+                }
                 try {
                     if (message) {
                         message.textContent = 'Enregistrement en cours...';
@@ -198,6 +231,9 @@
                     await window.EducInspectApi.updateAdminUser(user.id, payload);
                     const updated = { ...user, ...payload };
                     localStorage.setItem('educinspect_user', JSON.stringify(updated));
+                    if (payload.signature_path) {
+                        localStorage.setItem('educinspect_signature', payload.signature_path);
+                    }
                     document.querySelectorAll('[data-user-name]').forEach((el) => el.textContent = updated.name || el.textContent);
                     if (message) {
                         message.textContent = 'Profil mis a jour avec succes.';

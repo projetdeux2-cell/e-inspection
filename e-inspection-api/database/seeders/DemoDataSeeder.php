@@ -103,8 +103,10 @@ class DemoDataSeeder extends Seeder
                     ['mission_id' => $mission->id],
                     [
                         'inspection_date' => $row['effective_date'],
+                        'status' => 'signe',
                         'summary' => 'Inspection realisee avec observation des classes, verification des documents et entretien avec la direction.',
                         'global_score' => $row['score'],
+                        'signature_path' => 'http://127.0.0.1:8000/signatures/signature-koffi.png',
                         'report_path' => 'reports/rip-2026-00'.$index.'.pdf',
                     ]
                 );

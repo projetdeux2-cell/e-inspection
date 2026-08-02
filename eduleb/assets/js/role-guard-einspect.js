@@ -33,7 +33,11 @@ function redirectToRoleDashboard(roles) {
 
 function protectDashboard() {
 	const requiredRole = document.body.dataset.requiredRole;
-	if (!requiredRole) return;
+	const allowedRoles = (document.body.dataset.allowedRoles || requiredRole || "")
+		.split(",")
+		.map((role) => role.trim())
+		.filter(Boolean);
+	if (!allowedRoles.length) return;
 
 	const user = readSessionUser();
 	const roles = getUserRoles(user);
@@ -53,7 +57,7 @@ function protectDashboard() {
 			if (btn) {
 				btn.addEventListener('click', () => {
 					localStorage.setItem('educinspect_token', 'devtoken');
-					const roleName = requiredRole || 'admin';
+					const roleName = allowedRoles[0] || 'admin';
 					localStorage.setItem('educinspect_user', JSON.stringify({ name: 'Dev Utilisateur', roles: [{ name: roleName }] }));
 					location.reload();
 				});
@@ -65,7 +69,7 @@ function protectDashboard() {
 		return;
 	}
 
-	if (!roles.includes(requiredRole)) {
+	if (!allowedRoles.some((role) => roles.includes(role))) {
 		redirectToRoleDashboard(roles);
 		return;
 	}

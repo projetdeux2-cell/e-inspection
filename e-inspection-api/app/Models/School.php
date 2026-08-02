@@ -21,11 +21,17 @@ class School extends Model
         'phone',
         'email',
         'student_count',
+        'user_id',
     ];
 
     public function commune()
     {
         return $this->belongsTo(Commune::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function teachers()

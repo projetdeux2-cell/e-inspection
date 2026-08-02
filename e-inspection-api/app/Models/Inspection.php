@@ -12,6 +12,7 @@ class Inspection extends Model
     protected $fillable = [
         'mission_id',
         'inspection_date',
+        'status',
         'summary',
         'global_score',
         'signature_path',
