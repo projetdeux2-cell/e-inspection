@@ -155,29 +155,6 @@
                 return v.includes("realisee") || v.includes("signe") || v.includes("termine") || v.includes("done") || v.includes("completed");
             }
 
-            function render(list) {
-                if (!body) return;
-                if (!list.length) {
-                    body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><span class="ti-clipboard"></span><h4>Aucune mission</h4><p>Aucune mission ne correspond a votre recherche.</p></div></td></tr>';
-                    if (count) count.textContent = "0 mission(s)";
-                    return;
-                }
-                if (count) count.textContent = list.length + " mission(s)";
-                body.innerHTML = list.map(m => {
-                    const actionLabel = isMissionCompleted(m.status) ? "Voir" : "Commencer";
-                    return `
-                    <tr>
-                        <td><strong>${m.school?.name || "-"}</strong><span class="sub">${m.school?.code || ""}</span></td>
-                        <td>${m.school?.commune?.name || "-"}</td>
-                        <td>${m.planned_date || "-"}</td>
-                        <td>${m.inspector?.user?.name || "-"}</td>
-                        <td><span class="badge ${badgeClass(m.status)}">${statusLabel(m.status)}</span></td>
-                        <td><button class="mini-btn" type="button" data-mission-id="${m.id}">${actionLabel}</button></td>
-                    </tr>
-                `;
-                }).join("");
-            }
-
             try {
                 const [missionsData, inspectionsData] = await Promise.all([
                     window.EducInspectApi.list("missions"),
@@ -204,7 +181,7 @@
                     if (count) count.textContent = list.length + " mission(s)";
                     body.innerHTML = list.map(m => {
                         const report = getReportForMission(m.id);
-                        const canDownload = report && isReportSigned(report.status);
+                        const canDownload = report && isSignedReport(report);
                         const actionLabel = canDownload ? "Télécharger" : (isMissionCompleted(m.status) ? "Voir" : "Commencer");
                         const actionAttr = canDownload ? `data-mission-download="${m.id}"` : `data-mission-id="${m.id}"`;
                         return `
