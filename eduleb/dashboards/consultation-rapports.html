@@ -68,11 +68,11 @@
 				status: r.status || "En validation"
 			}));
 			if (!apiData.length && !inbox.length) {
-				const demo = [
+				const demo = sortListByLabel([
 					{ reference: "RIP-2026-001", school: "Ecole Primaire A", date: "2026-07-15", global_score: 85, status: "Signe", teacher: "M. Kouassi" },
 					{ reference: "RIP-2026-002", school: "Ecole Primaire B", date: "2026-07-10", global_score: 62, status: "En validation", teacher: "Mme Diallo" },
 					{ reference: "RIP-2026-003", school: "Groupe Scolaire C", date: "2026-07-05", global_score: 45, status: "Planifiee", teacher: "M. Houessou" }
-				];
+				], (r) => r.school);
 				if (typeof renderDirectionReports === "function") {
 					root.innerHTML = renderDirectionReports(normalize(demo));
 				} else {
@@ -85,7 +85,7 @@
 				}
 				return;
 			}
-			const all = [...normalize(inbox), ...apiData];
+			const all = sortListByLabel([...normalize(inbox), ...apiData], (r) => r.mission?.school?.name || r.school);
 			if (all.length && typeof renderDirectionReports === "function") {
 				root.innerHTML = renderDirectionReports(all);
 			}

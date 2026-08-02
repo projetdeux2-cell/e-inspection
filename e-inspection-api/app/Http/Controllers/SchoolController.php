@@ -14,7 +14,7 @@ class SchoolController extends Controller
 {
     public function index(Request $request)
     {
-        $query = School::with(['commune.department', 'user'])->latest();
+        $query = School::with(['commune.department', 'user'])->orderBy('name');
 
         if ($request->filled('user_id')) {
             $query->where('user_id', $request->query('user_id'));

@@ -8,6 +8,17 @@ function safeText(value, fallback = "-") {
 	return value === undefined || value === null || value === "" ? fallback : value;
 }
 
+function sortListByLabel(items, labelFn) {
+	const getLabel = (item) => {
+		if (!item) return "";
+		const value = labelFn
+			? labelFn(item)
+			: (item.name || item.user?.name || item.school?.name || item.mission?.school?.name || item.inspection?.mission?.school?.name || item.description || "");
+		return String(value || "").toLowerCase();
+	};
+	return [...(items || [])].sort((a, b) => getLabel(a).localeCompare(getLabel(b), "fr"));
+}
+
 function badgeClass(status) {
 	const value = String(status).toLowerCase();
 	if (value.includes("realisee") || value.includes("signe") || value.includes("actif") || value.includes("success")) return "badge success";
@@ -73,7 +84,7 @@ async function loadAdminUsers() {
 	if (!body || !window.EducInspectApi?.token) return;
 
 	try {
-		const users = normalizeList(await window.EducInspectApi.adminUsers());
+		const users = sortListByLabel(normalizeList(await window.EducInspectApi.adminUsers()), (user) => user.name);
 		body.innerHTML = renderRows(users, (user) => {
 			const role = user.roles?.[0]?.name || "";
 			return `
@@ -170,7 +181,7 @@ function buildReportHref(reportPath) {
 }
 
 function renderDirectionRecommendations(recommendations) {
-	const rows = renderRows(recommendations, (item) => {
+	const rows = renderRows(sortListByLabel(recommendations, (item) => item.inspection?.mission?.school?.name || item.description), (item) => {
 		const schoolName = safeText(item.inspection?.mission?.school?.name, "École non renseignée");
 		const inspectorName = safeText(item.inspection?.mission?.inspector?.user?.name, "Inspecteur");
 		const priority = safeText(item.priority, "medium");
@@ -188,7 +199,7 @@ function renderDirectionRecommendations(recommendations) {
 }
 
 function renderDirectionReports(inspections) {
-	const rows = renderRows(inspections, (item) => {
+	const rows = renderRows(sortListByLabel(inspections, (item) => item.mission?.school?.name || item.report_path), (item) => {
 		const reportHref = buildReportHref(item.report_path);
 		const actionHtml = reportHref
 			? `<div class="action-stack"><a class="mini-btn" href="${reportHref}" target="_blank" rel="noopener">Consulter</a><a class="mini-btn" href="${reportHref}" download="rapport-${item.id}.pdf">Télécharger</a></div>`
@@ -212,11 +223,11 @@ async function buildDirectionSections() {
 		fetchList("recommendations")
 	]);
 	return [
-		sectionHtml("calendrier-direction", "Calendrier de suivi", tableHtml(["Ecole", "Date", "Inspecteur", "Statut"], renderRows(missions, (item) =>
+		sectionHtml("calendrier-direction", "Calendrier de suivi", tableHtml(["Ecole", "Date", "Inspecteur", "Statut"], renderRows(sortListByLabel(missions, (item) => item.school?.name), (item) =>
 			`<tr><td><strong>${safeText(item.school?.name)}</strong><span>${safeText(item.school?.commune?.name)}</span></td><td>${safeText(item.planned_date)}</td><td>${safeText(item.inspector?.user?.name)}</td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		))),
 		sectionHtml("statistiques", "Statistiques direction", `<p>Les indicateurs de couverture, de qualite et de suivi sont charges depuis le backend sur les cartes du tableau de bord.</p>`),
-		sectionHtml("recommandations", "Recommandations a superviser", tableHtml(["Action", "Ecole", "Priorite", "Statut"], renderRows(recommendations, (item) =>
+		sectionHtml("recommandations", "Recommandations a superviser", tableHtml(["Action", "Ecole", "Priorite", "Statut"], renderRows(sortListByLabel(recommendations, (item) => item.inspection?.mission?.school?.name || item.description), (item) =>
 			`<tr><td><strong>${safeText(item.description)}</strong></td><td>${safeText(item.inspection?.mission?.school?.name)}</td><td><mark class="badge ${item.priority === 'high' ? 'warning' : item.priority === 'low' ? 'success' : 'info'}">${safeText(item.priority)}</mark></td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		)))
 	];
@@ -246,10 +257,10 @@ async function buildInspectorSections() {
 		fetchList("inspections")
 	]);
 	return [
-		sectionHtml("calendrier-inspecteur", "Mes missions", tableHtml(["Ecole", "Date", "Commune", "Statut"], renderRows(missions, (item) =>
+		sectionHtml("calendrier-inspecteur", "Mes missions", tableHtml(["Ecole", "Date", "Commune", "Statut"], renderRows(sortListByLabel(missions, (item) => item.school?.name), (item) =>
 			`<tr><td><strong>${safeText(item.school?.name)}</strong></td><td>${safeText(item.planned_date)}</td><td>${safeText(item.school?.commune?.name)}</td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		))),
-		sectionHtml("rapports-inspecteur", "Rapports produits", tableHtml(["Rapport", "Ecole", "Score", "Etat"], renderRows(inspections, (item) =>
+		sectionHtml("rapports-inspecteur", "Rapports produits", tableHtml(["Rapport", "Ecole", "Score", "Etat"], renderRows(sortListByLabel(inspections, (item) => item.mission?.school?.name || item.report_path), (item) =>
 			`<tr><td><strong>${safeText(item.report_path || `RIP-${item.id}`)}</strong></td><td>${safeText(item.mission?.school?.name)}</td><td>${safeText(item.global_score)}%</td><td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td></tr>`
 		)))
 	];
@@ -261,14 +272,17 @@ async function buildSchoolSections() {
 		fetchList("inspections"),
 		fetchList("missions")
 	]);
+	const sortedMissions = sortListByLabel(missions, (item) => item.school?.name);
+	const sortedRecommendations = sortListByLabel(recommendations, (item) => item.inspection?.mission?.school?.name || item.description);
+	const sortedInspections = sortListByLabel(inspections, (item) => item.mission?.school?.name || item.summary);
 	return [
-		sectionHtml("missions-ecole", "Missions assignées", tableHtml(["Mission", "Inspecteur", "Date", "Statut"], renderRows(missions, (item) =>
+		sectionHtml("missions-ecole", "Missions assignées", tableHtml(["Mission", "Inspecteur", "Date", "Statut"], renderRows(sortedMissions, (item) =>
 			`<tr><td><strong>${safeText(item.objective || "Mission d'inspection")}</strong><span>${safeText(item.school?.name)}</span></td><td>${safeText(item.inspector?.user?.name)}</td><td>${safeText(item.planned_date)}</td><td><mark class="${badgeClass(item.status || "planned")}">${safeText(item.status || "planned")}</mark></td></tr>`
 		))),
-		sectionHtml("plan-daction", "Plan d'action", tableHtml(["Action", "Responsable", "Echeance", "Statut"], renderRows(recommendations, (item) =>
+		sectionHtml("plan-daction", "Plan d'action", tableHtml(["Action", "Responsable", "Echeance", "Statut"], renderRows(sortedRecommendations, (item) =>
 			`<tr><td><strong>${safeText(item.description)}</strong></td><td>Direction d'ecole</td><td>${safeText(item.due_date)}</td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		))),
-		sectionHtml("observations", "Observations recues", tableHtml(["Observation", "Source", "Statut"], renderRows(inspections, (item) =>
+		sectionHtml("observations", "Observations recues", tableHtml(["Observation", "Source", "Statut"], renderRows(sortedInspections, (item) =>
 			`<tr><td><strong>${safeText(item.summary || "Observation de l'inspection")}</strong></td><td>${safeText(item.mission?.school?.name)}</td><td><mark class="${badgeClass(item.status || "Signe")}">${safeText(item.status || "Signe")}</mark></td></tr>`
 		)))
 	];
@@ -277,7 +291,7 @@ async function buildSchoolSections() {
 async function buildTeacherSections() {
 	const recommendations = await fetchList("recommendations");
 	return [
-		sectionHtml("observations", "Observations pédagogiques", tableHtml(["Observation", "Classe", "Statut"], renderRows(recommendations, (item) =>
+		sectionHtml("observations", "Observations pédagogiques", tableHtml(["Observation", "Classe", "Statut"], renderRows(sortListByLabel(recommendations, (item) => item.description), (item) =>
 			`<tr><td><strong>${safeText(item.description)}</strong></td><td>CP1</td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		)))
 	];
@@ -293,16 +307,16 @@ function createSectionSearch(input, items, renderFn) {
 	input.addEventListener("input", () => {
 		const query = (input.value || "").toLowerCase().trim();
 		if (!query) {
-			renderFn(items);
+			renderFn(sortListByLabel(items));
 			return;
 		}
-		const filtered = items.filter((item) => JSON.stringify(item).toLowerCase().includes(query));
+		const filtered = sortListByLabel(items.filter((item) => JSON.stringify(item).toLowerCase().includes(query)));
 		renderFn(filtered);
 	});
 }
 
 async function renderSchoolReportsPage(root) {
-	const inspections = await fetchList("inspections");
+	const inspections = sortListByLabel(await fetchList("inspections"), (item) => item.mission?.school?.name || item.report_path);
 	const filtered = inspections;
 	const render = (list) => {
 		const rows = renderRows(list, (item) => {
@@ -326,7 +340,7 @@ async function renderSchoolReportsPage(root) {
 }
 
 async function renderSchoolActionPlanPage(root) {
-	const recommendations = await fetchList("recommendations");
+	const recommendations = sortListByLabel(await fetchList("recommendations"), (item) => item.description);
 	const render = (list) => {
 		const rows = renderRows(list, (item) => `
 			<tr>
@@ -343,7 +357,7 @@ async function renderSchoolActionPlanPage(root) {
 }
 
 async function renderSchoolObservationsPage(root) {
-	const inspections = await fetchList("inspections");
+	const inspections = sortListByLabel(await fetchList("inspections"), (item) => item.mission?.school?.name || item.summary);
 	const render = (list) => {
 		const rows = renderRows(list, (item) => `
 			<tr>
@@ -359,7 +373,7 @@ async function renderSchoolObservationsPage(root) {
 }
 
 async function renderSchoolRecommendationsPage(root) {
-	const recommendations = await fetchList("recommendations");
+	const recommendations = sortListByLabel(await fetchList("recommendations"), (item) => item.description);
 	const render = (list) => {
 		const rows = renderRows(list, (item) => `
 			<tr>
@@ -447,7 +461,7 @@ async function renderSchoolTeachersPage(root) {
 			5);
 		renderSectionPane(root, ["Enseignant", "École", "Email", "Téléphone", "Action"], rows);
 	};
-	render(teachers);
+	render(sortListByLabel(teachers, (item) => item.name));
 	createSectionSearch(document.querySelector("[data-section-search]"), teachers, render);
 
 	document.addEventListener('click', async (event) => {
@@ -458,7 +472,7 @@ async function renderSchoolTeachersPage(root) {
 		if (!confirmed) return;
 		try {
 			await window.EducInspectApi.deleteResource('teachers', teacherId);
-			render(await fetchList('teachers'));
+			render(sortListByLabel(await fetchList('teachers'), (item) => item.name));
 		} catch (error) {
 			window.alert(error.message || 'Impossible de supprimer l\'enseignant.');
 		}
@@ -466,7 +480,7 @@ async function renderSchoolTeachersPage(root) {
 }
 
 async function renderValidateTeachersPage(root) {
-	const teachers = await fetchList("teachers");
+	const teachers = sortListByLabel(await fetchList("teachers"), (item) => item.name);
 	const render = (list) => {
 		const rows = renderRows(list, (item) => {
 			const status = item.email ? 'Validé' : 'À valider';
@@ -486,7 +500,7 @@ async function renderValidateTeachersPage(root) {
 }
 
 async function renderTeacherReportsPage(root) {
-	const inspections = await fetchList("inspections");
+	const inspections = sortListByLabel(await fetchList("inspections"), (item) => item.mission?.school?.name || item.report_path);
 	const render = (list) => {
 		const rows = renderRows(list, (item) => `
 			<tr>
@@ -503,7 +517,7 @@ async function renderTeacherReportsPage(root) {
 }
 
 async function renderTeacherObservationsPage(root) {
-	const inspections = await fetchList("inspections");
+	const inspections = sortListByLabel(await fetchList("inspections"), (item) => item.mission?.school?.name || item.summary);
 	const render = (list) => {
 		const rows = renderRows(list, (item) => `
 			<tr>
@@ -519,7 +533,7 @@ async function renderTeacherObservationsPage(root) {
 }
 
 async function renderTeacherActionsPage(root) {
-	const recommendations = await fetchList("recommendations");
+	const recommendations = sortListByLabel(await fetchList("recommendations"), (item) => item.description);
 	const render = (list) => {
 		const rows = renderRows(list, (item) => `
 			<tr>
@@ -812,6 +826,7 @@ async function loadAdminResourceRows(resource) {
 		} else {
 			items = normalizeList(await window.EducInspectApi.list(resource));
 		}
+		items = sortListByLabel(items);
 		body.innerHTML = renderResourceTable(resource, items).join("");
 		await loadResourceSelectOptions(resource);
 	} catch (error) {
@@ -835,6 +850,7 @@ async function loadResourceSelectOptions(resource) {
 		let data = [];
 		if (config.endpoint === "users") data = normalizeList(await window.EducInspectApi.adminUsers());
 		else data = normalizeList(await window.EducInspectApi.list(config.endpoint));
+		data = sortListByLabel(data);
 		select.innerHTML = data.map((item) => {
 			if (config.endpoint === "departments") return `<option value="${item.id}">${safeText(item.name)}</option>`;
 			if (config.endpoint === "communes") return `<option value="${item.id}">${safeText(item.name)}</option>`;

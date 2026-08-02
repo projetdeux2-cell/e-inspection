@@ -11,7 +11,7 @@ class TeacherController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Teacher::with(['school', 'user'])->latest();
+        $query = Teacher::with(['school', 'user'])->orderBy('name');
 
         if ($request->filled('user_id')) {
             $query->where('user_id', $request->query('user_id'));

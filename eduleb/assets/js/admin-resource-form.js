@@ -4,6 +4,11 @@ function normalizeList(payload) {
     return [];
 }
 
+function sortListByLabel(items, labelFn) {
+    const resolver = labelFn || ((item) => (item && item.name) || "");
+    return (items || []).slice().sort((a, b) => String(resolver(a)).localeCompare(String(resolver(b)), "fr"));
+}
+
 function getQueryParam(name) {
     return new URLSearchParams(window.location.search).get(name);
 }
@@ -26,7 +31,7 @@ async function loadSelectOptions(resource, form) {
     if (!form) return;
 
     if (resource === "communes") {
-        const departments = normalizeList(await window.EducInspectApi.list("departments"));
+        const departments = sortListByLabel(normalizeList(await window.EducInspectApi.list("departments")));
         const select = form.querySelector("[name='department_id']");
         if (!select) return;
         select.innerHTML = `
@@ -37,7 +42,7 @@ async function loadSelectOptions(resource, form) {
     }
 
     if (resource === "schools") {
-        const communes = normalizeList(await window.EducInspectApi.list("communes"));
+        const communes = sortListByLabel(normalizeList(await window.EducInspectApi.list("communes")));
         const communeSelect = form.querySelector("[name='commune_id']");
         if (communeSelect) {
             communeSelect.innerHTML = `
@@ -47,7 +52,7 @@ async function loadSelectOptions(resource, form) {
         }
         const userSelect = form.querySelector("[name='user_id']");
         if (userSelect) {
-            const users = normalizeList(await window.EducInspectApi.adminUsers());
+            const users = sortListByLabel(normalizeList(await window.EducInspectApi.adminUsers()));
             let schoolUsers = users.filter((item) => Array.isArray(item.roles) && item.roles.some((role) => String(role.name).toLowerCase() === "directeur_ecole"));
             if (!schoolUsers.length) {
                 schoolUsers = users;
@@ -61,7 +66,7 @@ async function loadSelectOptions(resource, form) {
     }
 
     if (resource === "inspectors") {
-        const users = normalizeList(await window.EducInspectApi.adminUsers());
+        const users = sortListByLabel(normalizeList(await window.EducInspectApi.adminUsers()));
         const select = form.querySelector("[name='user_id']");
         if (!select) return;
         select.innerHTML = `

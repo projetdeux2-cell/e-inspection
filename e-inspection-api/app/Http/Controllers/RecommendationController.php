@@ -9,7 +9,14 @@ class RecommendationController extends Controller
 {
     public function index()
     {
-        return Recommendation::with('inspection.mission.school', 'followUps')->latest()->paginate(20);
+        return Recommendation::query()
+            ->with('inspection.mission.school', 'followUps')
+            ->leftJoin('inspections', 'inspections.id', '=', 'recommendations.inspection_id')
+            ->leftJoin('missions', 'missions.id', '=', 'inspections.mission_id')
+            ->leftJoin('schools', 'schools.id', '=', 'missions.school_id')
+            ->orderBy('schools.name')
+            ->select('recommendations.*')
+            ->paginate(20);
     }
 
     public function store(Request $request)

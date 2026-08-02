@@ -63,6 +63,17 @@ function safeText(value, fallback = "-") {
 	return value === undefined || value === null || value === "" ? fallback : value;
 }
 
+function sortListByLabel(items, labelFn) {
+	const getLabel = (item) => {
+		if (!item) return "";
+		const value = labelFn
+			? labelFn(item)
+			: (item.name || item.school || item.school_name || item.school?.name || item.mission?.school?.name || item.reference || item.ref || item.description || "");
+		return String(value || "").toLowerCase();
+	};
+	return [...(items || [])].sort((a, b) => getLabel(a).localeCompare(getLabel(b), "fr"));
+}
+
 function parseDate(value) {
 	if (!value) return "-";
 	const date = new Date(value);
@@ -118,21 +129,33 @@ function isSigned(status) {
 	return normalizeText(status).includes("signe");
 }
 
+function isReportSigned(status) {
+	const normalized = normalizeText(status);
+	return normalized.includes("signe") || normalized.includes("complete") || normalized.includes("completed");
+}
+
+function normalizeReportStatus(status) {
+	const value = normalizeText(status);
+	if (value.includes("signe") || value.includes("complete") || value.includes("completed")) return "Complete";
+	if (value.includes("validation") || value.includes("encours") || value.includes("en cours") || value.includes("pending") || value.includes("in_progress")) return "En cours";
+	if (value.includes("plan")) return "Planifiee";
+	return status || "En cours";
+}
+
 function hasInspectorSignature(report) {
 	return Boolean(report?.signature_path || getCurrentInspectorSignature());
 }
 
 function isSignedReport(report) {
-	return isSigned(report?.status) && hasInspectorSignature(report);
+	return isReportSigned(report?.status) && hasInspectorSignature(report);
 }
 
 function reportActionButtons(report) {
 	const reportKey = report.id || report.reference || report.ref || "";
-	const previewButton = `<button class="mini-btn" type="button" data-preview="${reportKey}">Apercu</button>`;
-	if (isSigned(report.status)) {
-		return `<div class="action-stack">${previewButton}</div>`;
+	if (isSignedReport(report)) {
+		return `<button class="mini-btn" type="button" data-download-report="${reportKey}">Télécharger</button>`;
 	}
-	return `<div class="action-stack"><button class="mini-btn" type="button" data-edit-report="${reportKey}">Modifier</button><button class="mini-btn" type="button" data-delete-report="${reportKey}">Supprimer</button>${previewButton}</div>`;
+	return `<div class="action-stack"><button class="mini-btn" type="button" data-edit-report="${reportKey}">Modifier</button><button class="mini-btn" type="button" data-delete-report="${reportKey}">Supprimer</button></div>`;
 }
 
 function getSavedReportIndex(reportId) {
@@ -216,9 +239,9 @@ async function loadRemoteDashboardData() {
 			window.EducInspectApi.list("recommendations")
 		]);
 
-		dashboardState.missions = normalizeList(missionsPayload).map(mapMission);
-		dashboardState.reports = normalizeList(inspectionsPayload).map(mapInspection);
-		dashboardState.recommendations = normalizeList(recommendationsPayload).map(mapRecommendation);
+		dashboardState.missions = sortListByLabel(normalizeList(missionsPayload).map(mapMission), (mission) => mission.school);
+		dashboardState.reports = sortListByLabel(normalizeList(inspectionsPayload).map(mapInspection), (report) => report.school);
+		dashboardState.recommendations = sortListByLabel(normalizeList(recommendationsPayload).map(mapRecommendation));
 	} catch (error) {
 		console.warn("Chargement des donnees API du dashboard impossible, maintien des donnees de demonstration.", error);
 	}
@@ -227,6 +250,7 @@ async function loadRemoteDashboardData() {
 function renderMissions(list = dashboardState.missions) {
 	const body = document.querySelector("[data-missions-body]");
 	if (!body) return;
+	list = sortListByLabel(list, (mission) => mission.school);
 	body.innerHTML = list.map((mission) => `
 		<tr>
 			<td><strong>${mission.school}</strong><span>${mission.city}</span></td>
@@ -242,6 +266,7 @@ function renderMissions(list = dashboardState.missions) {
 function renderReports(list = dashboardState.reports) {
 	const body = document.querySelector("[data-reports-body]");
 	if (!body) return;
+	list = sortListByLabel(list, (report) => report.school);
 	body.innerHTML = list.map((report) => `
 		<tr>
 			<td><strong>${report.ref}</strong><span>${report.school}</span></td>
@@ -284,7 +309,7 @@ function renderInspectorSummary(reports = []) {
 	const signedEl = document.querySelector("[data-signed]");
 	const avgEl = document.querySelector("[data-avg-score]");
 	if (totalEl) totalEl.textContent = reports.length;
-    if (signedEl) signedEl.textContent = reports.filter((r) => isSigned(r.status)).length;
+    if (signedEl) signedEl.textContent = reports.filter((r) => isReportSigned(r.status)).length;
 	const scores = reports.map((r) => Number(r.global_score || r.score || 0)).filter((s) => s > 0);
 	const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
 	if (avgEl) avgEl.textContent = avg + "%";
@@ -302,11 +327,12 @@ function setupInspectorReportsPage() {
 
 	const renderFilteredReports = () => {
 		const query = (search?.value || "").toLowerCase().trim();
-		let filtered = [...window.InspectorReportPage.allReports];
-		if (window.InspectorReportPage.currentFilter !== "all") {
-			filtered = filtered.filter((report) => String(report.status || "").toLowerCase().includes(window.InspectorReportPage.currentFilter));
+		let filtered = sortListByLabel([...window.InspectorReportPage.allReports], (report) => report.school || report.mission?.school?.name || report.reference);
+		if (window.InspectorReportPage.currentFilter === "signe") {
+			filtered = filtered.filter((report) => isReportSigned(report.status));
+		} else if (window.InspectorReportPage.currentFilter === "validation") {
+			filtered = filtered.filter((report) => !isReportSigned(report.status));
 		}
-		filtered = filtered.filter(isSignedReport);
 		if (query) {
 			filtered = filtered.filter((report) => {
 				const text = [report.reference, report.ref, report.school, report.status, report.mission?.school?.name].join(" ").toLowerCase();
@@ -332,7 +358,7 @@ function setupInspectorReportsPage() {
 		window.InspectorReportPage.allReports = inboxReports.map((report) => ({
 			...report,
 			signature_path: report.signature_path || getCurrentInspectorSignature()
-		})).filter(isSignedReport);
+		}));
 		renderInspectorSummary(window.InspectorReportPage.allReports);
 		renderFilteredReports();
 	}
@@ -342,7 +368,7 @@ function setupInspectorReportsPage() {
 			const reports = (Array.isArray(data) ? data : (data?.data || [])).map((report) => ({
 				...report,
 				signature_path: report.signature_path || getCurrentInspectorSignature()
-			})).filter(isSignedReport);
+			}));
 			if (!reports.length && window.InspectorReportPage.allReports.length) return;
 			window.InspectorReportPage.allReports = reports;
 			renderInspectorSummary(window.InspectorReportPage.allReports);
@@ -351,22 +377,31 @@ function setupInspectorReportsPage() {
 	}
 
 	body.addEventListener("click", async (event) => {
-		const previewBtn = event.target.closest("[data-preview]");
+		const downloadBtn = event.target.closest("[data-download-report]");
+		const viewBtn = event.target.closest("[data-view-report]");
 		const editBtn = event.target.closest("[data-edit-report]");
 		const deleteBtn = event.target.closest("[data-delete-report]");
-		if (previewBtn) {
+		if (downloadBtn) {
 			event.preventDefault();
-			const reportKey = previewBtn.dataset.preview;
+			const reportKey = downloadBtn.dataset.downloadReport;
 			const report = window.InspectorReportPage.allReports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
 			if (report) {
-				updateReportPreview(report);
+				exportReportAsPdf(report);
+			}
+		}
+		if (viewBtn) {
+			event.preventDefault();
+			const reportKey = viewBtn.dataset.viewReport;
+			const report = window.InspectorReportPage.allReports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
+			if (report) {
+				openReportPdf(report);
 			}
 		}
 		if (editBtn) {
 			event.preventDefault();
 			const reportKey = editBtn.dataset.editReport;
 			const report = window.InspectorReportPage.allReports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
-			if (report && !isSigned(report.status)) {
+			if (report && !isReportSigned(report.status)) {
 				persistPendingEditReport(report);
 				window.location.href = "creer-rapport-inspecteur.html";
 			}
@@ -375,7 +410,7 @@ function setupInspectorReportsPage() {
 			event.preventDefault();
 			const reportKey = deleteBtn.dataset.deleteReport;
 			const report = window.InspectorReportPage.allReports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
-			if (report && !isSigned(report.status)) {
+			if (report && !isReportSigned(report.status)) {
 				if (window.confirm('Voulez-vous supprimer ce rapport ?')) {
 					deleteSavedReport(reportKey);
 					window.InspectorReportPage.allReports = window.InspectorReportPage.allReports.filter((item) => String(item.id) !== String(reportKey) && String(item.reference) !== String(reportKey) && String(item.ref) !== String(reportKey));
@@ -465,7 +500,7 @@ function buildReportPayload(form) {
 	const documents = Number(data.get("documents") || 0);
 	const score = Math.round((preparation + pedagogie + gestion + documents) / 4);
 	const status = data.get("status") || "En validation";
-	const signaturePath = isSigned(status) ? getCurrentInspectorSignature() : undefined;
+	const signaturePath = isReportSigned(status) ? getCurrentInspectorSignature() : undefined;
 	return {
 		reference: data.get("reference") || `RIP-${new Date().getFullYear()}-${Math.floor(Math.random() * 900 + 100)}`,
 		school: data.get("school") || "Ecole",
@@ -560,9 +595,75 @@ function updateReportBuilderPreviewLabels(form) {
 	});
 }
 
+async function openReportPdf(report) {
+	if (!report) return;
+	const reportHref = buildReportHref(report.report_path || report.reportPath || report.path);
+	if (reportHref) {
+		window.open(reportHref, "_blank");
+		return;
+	}
+
+	if (isReportSigned(report.status) && !report.signature_path) {
+		const signature = getCurrentInspectorSignature();
+		if (!signature) {
+			window.alert("Ce rapport est signe, mais votre signature n'est pas encore enregistree. Allez dans Parametres pour l'ajouter avant d'afficher le PDF.");
+			return;
+		}
+	}
+
+	const payload = {
+		reference: report.reference || report.ref || `RIP-${report.id || Date.now()}`,
+		school: report.school || report.school_name || report.mission?.school?.name || "",
+		teacher: report.teacher || report.teacher_name || "",
+		date: report.date || report.inspection_date || new Date().toISOString().slice(0, 10),
+		status: report.status || "En cours",
+		preparation: report.preparation || 0,
+		pedagogie: report.pedagogie || 0,
+		gestion: report.gestion || 0,
+		documents: report.documents || 0,
+		observations: report.observations || "",
+		recommendations: report.recommendations || "",
+		notes: report.notes || "",
+		global_score: report.global_score || report.score || 0,
+		signature_path: report.signature_path || getCurrentInspectorSignature()
+	};
+
+	try {
+		const headers = {
+			Accept: "application/pdf",
+			"Content-Type": "application/json",
+		};
+		if (window.EducInspectApi?.token) {
+			headers.Authorization = `Bearer ${window.EducInspectApi.token}`;
+		}
+
+		const response = await fetch(`${window.EducInspectApi.baseUrl}/reports/export-pdf`, {
+			method: "POST",
+			headers,
+			body: JSON.stringify(payload)
+		});
+
+		if (!response.ok) {
+			let message = "Impossible d'ouvrir le rapport.";
+			try {
+				const data = await response.json();
+				message = data.message || message;
+			} catch {}
+			throw new Error(message);
+		}
+
+		const blob = await response.blob();
+		const url = URL.createObjectURL(blob);
+		window.open(url, "_blank");
+		setTimeout(() => URL.revokeObjectURL(url), 10000);
+	} catch (error) {
+		window.alert(error?.message || "Erreur lors de l'ouverture du PDF.");
+	}
+}
+
 async function exportReportAsPdf(report) {
 	if (!report) return;
-	if (isSigned(report.status) && !report.signature_path) {
+	if (isReportSigned(report.status) && !report.signature_path) {
 		window.alert("Ce rapport est signe, mais votre signature n'est pas encore enregistree. Allez dans Parametres pour l'ajouter avant de telecharger.");
 		return;
 	}
@@ -713,7 +814,7 @@ function setupReportBuilder() {
 			if (reportIdField && pendingEdit.id) {
 				reportIdField.value = pendingEdit.id;
 			}
-			if (pendingEdit.status && isSigned(pendingEdit.status)) {
+			if (pendingEdit.status && isReportSigned(pendingEdit.status)) {
 				form.querySelectorAll("input, select, textarea, button[type='submit']").forEach((input) => {
 					if (input !== exportButton) input.disabled = true;
 				});
@@ -769,7 +870,7 @@ function setupReportBuilder() {
 	form.addEventListener("submit", (event) => {
 		event.preventDefault();
 		const report = buildReportPayload(form);
-		if (isSigned(report.status) && !report.signature_path) {
+		if (isReportSigned(report.status) && !report.signature_path) {
 			const goToProfile = window.confirm("Ce rapport est marque comme signe, mais votre signature n'est pas encore enregistree. Voulez-vous aller dans Parametres pour l'ajouter ?");
 			if (goToProfile) {
 				window.location.href = "profile.html";
@@ -1114,7 +1215,7 @@ async function loadInspectorDashboard() {
 
 	const currentUser = getCurrentUser();
 	const currentInspectorId = currentUser?.id || currentUser?.user_id || "";
-	const missions = normalizeList(missionsData)
+	const missionsMapped = normalizeList(missionsData)
 		.filter((item) => {
 			const inspectorId = item.inspector?.user?.id || item.inspector?.id || item.inspector_id;
 			return String(inspectorId) === String(currentInspectorId) || isMissionCompleted(item.status);
@@ -1128,8 +1229,10 @@ async function loadInspectorDashboard() {
 			raw: item
 		}));
 
-	const inspections = normalizeList(inspectionsData);
-	const recs = normalizeList(recsData);
+	const missions = sortListByLabel(missionsMapped, (mission) => mission.school);
+
+	const inspections = sortListByLabel(normalizeList(inspectionsData), (item) => item.mission?.school?.name || item.school?.name || item.reference);
+	const recs = sortListByLabel(normalizeList(recsData));
 
 	const reportsBody = document.querySelector("[data-reports-summary-body]");
 	if (reportsBody) {
@@ -1228,7 +1331,13 @@ function setupReportPreview() {
 }
 
 async function initializeDashboard() {
-	const isInspectorDashboard = document.body.dataset.requiredRole === "inspecteur";
+	const body = document.body;
+	const isInspectorDashboard = body.dataset.requiredRole === "inspecteur";
+	const skipDashboardInit = body.dataset.skipDashboardInit === "true";
+
+	if (skipDashboardInit) {
+		return;
+	}
 
 	setupSearch();
 	setupMissionForm();

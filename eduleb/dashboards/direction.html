@@ -210,8 +210,8 @@
 						tbody.innerHTML = '<tr><td colspan="5" class="assignment-empty">Aucune inspection assignée pour le moment.</td></tr>';
 						return;
 					}
-
-					tbody.innerHTML = assignments.map((item, index) => `
+					const sorted = [...assignments].sort((a, b) => String(a.school || "").localeCompare(String(b.school || ""), "fr"));
+					tbody.innerHTML = sorted.map((item, index) => `
 						<tr>
 							<td>${index + 1}</td>
 							<td>${item.school}</td>
@@ -286,15 +286,15 @@
 			}
 			try {
 				const raw = await window.EducInspectApi.list("schools");
-				allSchools = Array.isArray(raw) ? raw : (raw?.data || []);
+				allSchools = sortListByLabel(Array.isArray(raw) ? raw : (raw?.data || []), (s) => s.name);
 			} catch(e) {
-				allSchools = [
+				allSchools = sortListByLabel([
 					{ name: "Ecole Primaire A", commune: { name: "Cotonou" }, director_name: "M. Ahouansou", status: "Active" },
 					{ name: "Ecole Primaire B", commune: { name: "Abomey-Calavi" }, director_name: "Mme Dossa", status: "Active" },
 					{ name: "Groupe Scolaire C", commune: { name: "Porto-Novo" }, director_name: "M. Houndegbe", status: "Inactive" },
 					{ name: "EPP Centre", commune: { name: "Lokossa" }, director_name: "Mme Tossou", status: "Active" },
 					{ name: "Ecole Maternelle D", commune: { name: "Parakou" }, director_name: "—", status: "Active" }
-				];
+				], (s) => s.name);
 			}
 			render(allSchools);
 			search?.addEventListener("input", () => {

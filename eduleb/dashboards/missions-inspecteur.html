@@ -57,7 +57,7 @@
         .empty-state h4 { font-weight: 700; color: #0a1e3c; margin-bottom: 8px; }
     </style>
 </head>
-<body data-required-role="inspecteur">
+<body data-required-role="inspecteur" data-skip-dashboard-init="true">
     <div class="app-shell">
         <aside class="sidebar">
             <a class="brand" href="../index.html"><img src="../assets/img/logo1.png" alt="EducInspect"><span>EducInspect</span></a>
@@ -136,14 +136,23 @@
 
             function badgeClass(s) {
                 const v = String(s).toLowerCase();
-                if (v.includes("realisee") || v.includes("signe") || v.includes("termine") || v.includes("done")) return "success";
-                if (v.includes("confirmee") || v.includes("validation")) return "info";
+                if (v.includes("realisee") || v.includes("signe") || v.includes("termine") || v.includes("done") || v.includes("completed")) return "success";
+                if (v.includes("confirmee") || v.includes("validation") || v.includes("in_progress")) return "info";
                 return "warning";
+            }
+
+            function statusLabel(status) {
+                const v = String(status || "").toLowerCase();
+                if (v.includes("planned")) return "Planifiee";
+                if (v.includes("in_progress")) return "En cours";
+                if (v.includes("completed") || v.includes("realisee") || v.includes("signe")) return "Realisee";
+                if (v.includes("cancelled")) return "Annulee";
+                return status || "Planifiee";
             }
 
             function isMissionCompleted(status) {
                 const v = String(status).toLowerCase();
-                return v.includes("realisee") || v.includes("signe") || v.includes("termine") || v.includes("done");
+                return v.includes("realisee") || v.includes("signe") || v.includes("termine") || v.includes("done") || v.includes("completed");
             }
 
             function render(list) {
@@ -162,7 +171,7 @@
                         <td>${m.school?.commune?.name || "-"}</td>
                         <td>${m.planned_date || "-"}</td>
                         <td>${m.inspector?.user?.name || "-"}</td>
-                        <td><span class="badge ${badgeClass(m.status)}">${m.status || "-"}</span></td>
+                        <td><span class="badge ${badgeClass(m.status)}">${statusLabel(m.status)}</span></td>
                         <td><button class="mini-btn" type="button" data-mission-id="${m.id}">${actionLabel}</button></td>
                     </tr>
                 `;
@@ -170,42 +179,92 @@
             }
 
             try {
-                const data = await window.EducInspectApi.list("missions");
-                allMissions = Array.isArray(data) ? data : (data?.data || []);
+                const [missionsData, inspectionsData] = await Promise.all([
+                    window.EducInspectApi.list("missions"),
+                    window.EducInspectApi.list("inspections")
+                ]);
+
+                const inspections = Array.isArray(inspectionsData) ? inspectionsData : (inspectionsData?.data || []);
+                const missionReportMap = new Map(inspections.map((report) => {
+                    const missionId = report.mission?.id || report.mission_id || report.mission?.mission_id;
+                    return missionId ? [String(missionId), report] : null;
+                }).filter(Boolean));
+
+                function getReportForMission(missionId) {
+                    return missionReportMap.get(String(missionId)) || null;
+                }
+
+                function render(list) {
+                    if (!body) return;
+                    if (!list.length) {
+                        body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><span class="ti-clipboard"></span><h4>Aucune mission</h4><p>Aucune mission ne correspond a votre recherche.</p></div></td></tr>';
+                        if (count) count.textContent = "0 mission(s)";
+                        return;
+                    }
+                    if (count) count.textContent = list.length + " mission(s)";
+                    body.innerHTML = list.map(m => {
+                        const report = getReportForMission(m.id);
+                        const canDownload = report && isReportSigned(report.status);
+                        const actionLabel = canDownload ? "Télécharger" : (isMissionCompleted(m.status) ? "Voir" : "Commencer");
+                        const actionAttr = canDownload ? `data-mission-download="${m.id}"` : `data-mission-id="${m.id}"`;
+                        return `
+                    <tr>
+                        <td><strong>${m.school?.name || "-"}</strong><span class="sub">${m.school?.code || ""}</span></td>
+                        <td>${m.school?.commune?.name || "-"}</td>
+                        <td>${m.planned_date || "-"}</td>
+                        <td>${m.inspector?.user?.name || "-"}</td>
+                        <td><span class="badge ${badgeClass(m.status)}">${statusLabel(m.status)}</span></td>
+                        <td><button class="mini-btn" type="button" ${actionAttr}>${actionLabel}</button></td>
+                    </tr>
+                `;
+                    }).join("");
+                }
+
+                allMissions = sortListByLabel(Array.isArray(missionsData) ? missionsData : (missionsData?.data || []), (m) => m.school?.name || m.school_name);
                 render(allMissions);
+
+                let currentFilter = "all";
+                function applyFilters() {
+                    const q = (search?.value || "").toLowerCase().trim();
+                    let filtered = allMissions;
+                    if (currentFilter !== "all") filtered = filtered.filter(m => String(m.status || "").toLowerCase().includes(currentFilter));
+                    if (q) filtered = filtered.filter(m => {
+                        const text = [m.school?.name, m.school?.commune?.name, m.status, m.inspector?.user?.name].join(" ").toLowerCase();
+                        return text.includes(q);
+                    });
+                    render(filtered);
+                }
+
+                filters.forEach(btn => btn.addEventListener("click", () => {
+                    filters.forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    currentFilter = btn.dataset.filter;
+                    applyFilters();
+                }));
+
+                search?.addEventListener("input", applyFilters);
+
+                body.addEventListener("click", async (event) => {
+                    const downloadBtn = event.target.closest("button[data-mission-download]");
+                    if (downloadBtn) {
+                        event.preventDefault();
+                        const missionId = downloadBtn.dataset.missionDownload;
+                        const report = getReportForMission(missionId);
+                        if (report) {
+                            await exportReportAsPdf(report);
+                        }
+                        return;
+                    }
+
+                    const button = event.target.closest("button[data-mission-id]");
+                    if (!button) return;
+                    const missionId = button.dataset.missionId;
+                    if (!missionId) return;
+                    window.location.href = `creer-rapport-inspecteur.html?mission_id=${encodeURIComponent(missionId)}`;
+                });
             } catch(e) {
                 body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><span class="ti-alert"></span><h4>Erreur de chargement</h4><p>Impossible de recuperer les missions.</p></div></td></tr>';
             }
-
-            let currentFilter = "all";
-            function applyFilters() {
-                const q = (search?.value || "").toLowerCase().trim();
-                let filtered = allMissions;
-                if (currentFilter !== "all") filtered = filtered.filter(m => String(m.status || "").toLowerCase().includes(currentFilter));
-                if (q) filtered = filtered.filter(m => {
-                    const text = [m.school?.name, m.school?.commune?.name, m.status, m.inspector?.user?.name].join(" ").toLowerCase();
-                    return text.includes(q);
-                });
-                render(filtered);
-            }
-
-            filters.forEach(btn => btn.addEventListener("click", () => {
-                filters.forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                currentFilter = btn.dataset.filter;
-                applyFilters();
-            }));
-
-            search?.addEventListener("input", applyFilters);
-
-            body.addEventListener("click", (event) => {
-                const button = event.target.closest("button[data-mission-id]");
-                if (!button) return;
-                const missionId = button.dataset.missionId;
-                if (!missionId) return;
-                window.location.href = `creer-rapport-inspecteur.html?mission_id=${encodeURIComponent(missionId)}`;
-            });
-        })();
     </script>
 </body>
 </html>

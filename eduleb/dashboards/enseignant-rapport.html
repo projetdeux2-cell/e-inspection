@@ -55,7 +55,7 @@
                 const inbox = typeof getInboxReports === "function" ? getInboxReports() : [];
                 const myReports = inbox.filter(r => r.teacher);
                 if (myReports.length) {
-                    const rows = myReports.map(r => `<tr><td><strong>${r.reference}</strong><span>${r.school}</span></td><td>${r.teacher}</td><td>${r.date}</td><td>${r.global_score}%</td><td><mark class="${badgeClass(r.status)}">${r.status}</mark></td></tr>`).join("");
+                    const rows = sortListByLabel(myReports, (r) => r.school).map(r => `<tr><td><strong>${r.reference}</strong><span>${r.school}</span></td><td>${r.teacher}</td><td>${r.date}</td><td>${r.global_score}%</td><td><mark class="${badgeClass(r.status)}">${r.status}</mark></td></tr>`).join("");
                     root.innerHTML = `<table class="data-table"><thead><tr><th>Rapport</th><th>École</th><th>Enseignant</th><th>Date</th><th>Score</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table>`;
                     return;
                 }
@@ -63,7 +63,7 @@
                     { reference: "RIP-2026-001", school: "Ecole Primaire A", teacher: "M. Kouassi", date: "2026-07-15", global_score: 85, status: "Signe" },
                     { reference: "RIP-2026-002", school: "Ecole Primaire B", teacher: "Mme Diallo", date: "2026-07-10", global_score: 62, status: "En validation" }
                 ];
-                const rows = demo.map(r => `<tr><td><strong>${r.reference}</strong><span>${r.school}</span></td><td>${r.teacher}</td><td>${r.date}</td><td>${r.global_score}%</td><td><mark class="${badgeClass(r.status)}">${r.status}</mark></td></tr>`).join("");
+                const rows = sortListByLabel(demo, (r) => r.school).map(r => `<tr><td><strong>${r.reference}</strong><span>${r.school}</span></td><td>${r.teacher}</td><td>${r.date}</td><td>${r.global_score}%</td><td><mark class="${badgeClass(r.status)}">${r.status}</mark></td></tr>`).join("");
                 root.innerHTML = `<table class="data-table"><thead><tr><th>Rapport</th><th>École</th><th>Enseignant</th><th>Date</th><th>Score</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table>`;
             }, 500);
         })();

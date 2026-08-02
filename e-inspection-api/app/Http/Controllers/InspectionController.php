@@ -11,7 +11,13 @@ class InspectionController extends Controller
 {
     public function index()
     {
-        return Inspection::with('mission.school', 'evaluations.criterion', 'recommendations')->latest()->paginate(20);
+        return Inspection::query()
+            ->with('mission.school', 'evaluations.criterion', 'recommendations')
+            ->join('missions', 'missions.id', '=', 'inspections.mission_id')
+            ->join('schools', 'schools.id', '=', 'missions.school_id')
+            ->orderBy('schools.name')
+            ->select('inspections.*')
+            ->paginate(20);
     }
 
     public function store(Request $request)

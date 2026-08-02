@@ -58,7 +58,7 @@
                 if (root.querySelector("td") && !root.textContent.includes("Aucun")) return;
                 const inbox = typeof getInboxReports === "function" ? getInboxReports() : [];
                 if (inbox.length) {
-                    const rows = inbox.map(r => `<tr><td><strong>${r.reference}</strong><span>${r.school}</span></td><td>${r.date}</td><td>${r.global_score}%</td><td><mark class="${badgeClass(r.status)}">${r.status}</mark></td><td><span class="muted">PDF disponible apres validation</span></td></tr>`).join("");
+                    const rows = sortListByLabel(inbox, (r) => r.school).map(r => `<tr><td><strong>${r.reference}</strong><span>${r.school}</span></td><td>${r.date}</td><td>${r.global_score}%</td><td><mark class="${badgeClass(r.status)}">${r.status}</mark></td><td><span class="muted">PDF disponible apres validation</span></td></tr>`).join("");
                     root.innerHTML = `<table class="data-table"><thead><tr><th>Rapport</th><th>École</th><th>Date</th><th>Score</th><th>Statut</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`;
                     return;
                 }
@@ -66,7 +66,7 @@
                     { reference: "RIP-2026-001", school: "Ecole Primaire A", date: "2026-07-15", global_score: 85, status: "Signe" },
                     { reference: "RIP-2026-002", school: "Ecole Primaire B", date: "2026-07-10", global_score: 62, status: "En validation" }
                 ];
-                const rows = demo.map(r => `<tr><td><strong>${r.reference}</strong><span>${r.school}</span></td><td>${r.date}</td><td>${r.global_score}%</td><td><mark class="${badgeClass(r.status)}">${r.status}</mark></td><td><span class="muted">PDF disponible apres validation</span></td></tr>`).join("");
+                const rows = sortListByLabel(demo, (r) => r.school).map(r => `<tr><td><strong>${r.reference}</strong><span>${r.school}</span></td><td>${r.date}</td><td>${r.global_score}%</td><td><mark class="${badgeClass(r.status)}">${r.status}</mark></td><td><span class="muted">PDF disponible apres validation</span></td></tr>`).join("");
                 root.innerHTML = `<table class="data-table"><thead><tr><th>Rapport</th><th>École</th><th>Date</th><th>Score</th><th>Statut</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`;
             }, 500);
         })();

@@ -117,8 +117,8 @@
                     window.EducInspectApi.list('inspectors')
                 ]);
 
-                const schools = normalizeCollection(schoolsResp);
-                const inspectors = normalizeCollection(inspectorsResp);
+                const schools = sortListByLabel(normalizeCollection(schoolsResp), (school) => school.name);
+                const inspectors = sortListByLabel(normalizeCollection(inspectorsResp), (inspector) => inspector.user?.name || inspector.name);
 
                 schoolSelect.innerHTML = '<option value="">Sélectionner</option>' + schools.map((school) => `<option value="${school.id}">${school.name} (${school.code || 'École'})</option>`).join('');
                 inspectorSelect.innerHTML = '<option value="">Sélectionner</option>' + inspectors.map((inspector) => `<option value="${inspector.id}">${inspector.user?.name || 'Inspecteur'}${inspector.registration_number ? ` - ${inspector.registration_number}` : ''}</option>`).join('');
