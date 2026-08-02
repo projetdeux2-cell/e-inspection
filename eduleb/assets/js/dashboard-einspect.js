@@ -1048,6 +1048,26 @@ async function loadInspectorDashboard() {
 	const inspections = normalizeList(inspectionsData);
 	const recs = normalizeList(recsData);
 
+	const reportsBody = document.querySelector("[data-reports-summary-body]");
+	if (reportsBody) {
+		if (!inspections.length) {
+			reportsBody.innerHTML = '<tr><td colspan="5">Aucun rapport disponible.</td></tr>';
+		} else {
+			reportsBody.innerHTML = inspections.slice(0, 5).map((report) => {
+				const score = Number(report.global_score || report.score || 0);
+				return `
+					<tr>
+						<td><strong>${safeText(report.reference || report.ref || `RIP-${report.id || "?"}`)}</strong></td>
+						<td>${safeText(report.school?.name || report.school_name || report.mission?.school?.name || "Ecole")}</td>
+						<td>${parseDate(report.inspection_date || report.date)}</td>
+						<td>${score}%</td>
+						<td><mark class="${badgeClass(report.status)}">${safeText(report.status, "En attente")}</mark></td>
+					</tr>
+				`;
+			}).join("");
+		}
+	}
+
 	if (missionsBody) {
 		if (!missions.length) {
 			missionsBody.innerHTML = '<tr><td colspan="5">Aucune mission assignee.</td></tr>';

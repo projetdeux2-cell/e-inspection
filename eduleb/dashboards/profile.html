@@ -100,7 +100,9 @@
     <script src="../assets/js/role-guard-einspect.js"></script>
     <script>
         const user = JSON.parse(localStorage.getItem('educinspect_user') || '{}');
-        const profileRole = user.roles?.[0]?.name || user.role || '';
+        const profileRole = Array.isArray(user.roles)
+            ? (user.roles[0]?.name || user.roles[0] || user.role)
+            : user.role || '';
         const roleNames = {
             admin: 'Administrateur',
             directeur_departemental: 'Direction departementale',
