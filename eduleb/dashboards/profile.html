@@ -78,7 +78,7 @@
                                 <label for="password">Nouveau mot de passe</label>
                                 <input id="password" name="password" type="password" class="form-control" placeholder="Laisser vide pour conserver l'actuel">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" data-signature-field>
                                 <label for="signature">Signature (image)</label>
                                 <input id="signature" name="signature" type="file" accept="image/*" class="form-control">
                                 <div class="signature-preview" style="margin-top:12px;">
@@ -187,8 +187,16 @@
         const message = document.querySelector('[data-profile-message]');
         const signatureInput = document.getElementById('signature');
         const signaturePreview = document.getElementById('signaturePreview');
+        const signatureField = document.querySelector('[data-signature-field]');
+        const signatureKey = `educinspect_signature_${user.id || 'unknown'}`;
 
-        const storedSignature = user.signature_path || localStorage.getItem('educinspect_signature');
+        if (profileRole !== 'inspecteur' && signatureField) {
+            signatureField.style.display = 'none';
+        }
+
+        const storedSignature = profileRole === 'inspecteur'
+            ? (user.signature_path || localStorage.getItem(signatureKey))
+            : '';
         if (storedSignature && signaturePreview) {
             signaturePreview.src = storedSignature;
             signaturePreview.style.display = 'block';
@@ -232,9 +240,12 @@
                     }
                     await window.EducInspectApi.updateAdminUser(user.id, payload);
                     const updated = { ...user, ...payload };
+                    if (profileRole !== 'inspecteur') {
+                        delete updated.signature_path;
+                    }
                     localStorage.setItem('educinspect_user', JSON.stringify(updated));
-                    if (payload.signature_path) {
-                        localStorage.setItem('educinspect_signature', payload.signature_path);
+                    if (profileRole === 'inspecteur' && payload.signature_path) {
+                        localStorage.setItem(signatureKey, payload.signature_path);
                     }
                     document.querySelectorAll('[data-user-name]').forEach((el) => el.textContent = updated.name || el.textContent);
                     if (message) {

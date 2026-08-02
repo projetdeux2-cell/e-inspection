@@ -12,9 +12,15 @@ use Spatie\Permission\Models\Role;
 
 class SchoolController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return School::with(['commune.department', 'user'])->latest()->paginate(20);
+        $query = School::with(['commune.department', 'user'])->latest();
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->query('user_id'));
+        }
+
+        return $query->paginate(20);
     }
 
     public function store(Request $request)

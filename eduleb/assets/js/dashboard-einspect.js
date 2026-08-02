@@ -77,9 +77,21 @@ function getCurrentUser() {
 	}
 }
 
+function getInspectorSignatureStorageKey(user = {}) {
+	const id = user?.id || user?.user_id;
+	return id ? `educinspect_signature_${id}` : "educinspect_signature";
+}
+
 function getCurrentInspectorSignature() {
 	const user = getCurrentUser();
-	return localStorage.getItem("educinspect_signature") || user.signature_path || "";
+	const roles = Array.isArray(user.roles)
+		? user.roles.map((role) => (typeof role === "string" ? role : role?.name)).filter(Boolean)
+		: [];
+	if (!roles.includes("inspecteur")) {
+		return "";
+	}
+	const signatureKey = getInspectorSignatureStorageKey(user);
+	return localStorage.getItem(signatureKey) || user.signature_path || "";
 }
 function normalizeText(value) {
 	return String(value || "").normalize("NFD").replace(/[\x00-\x7f]/g, (char) => char).replace(/[\x00-\x1f]/g, "").replace(/[\u0300-\u036f]/g, "").toLowerCase();

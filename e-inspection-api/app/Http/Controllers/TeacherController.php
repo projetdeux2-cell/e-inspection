@@ -16,6 +16,9 @@ class TeacherController extends Controller
         if ($request->filled('user_id')) {
             $query->where('user_id', $request->query('user_id'));
         }
+        if ($request->filled('school_id')) {
+            $query->where('school_id', $request->query('school_id'));
+        }
 
         return $query->paginate(20);
     }

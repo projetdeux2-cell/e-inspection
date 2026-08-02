@@ -40,13 +40,13 @@ function renderRows(items, mapper, emptyText = "Aucune donnee disponible.", empt
 	return items.map(mapper);
 }
 
-async function fetchList(resource) {
+async function fetchList(resource, params = {}) {
 	if (!window.EducInspectApi?.token) return [];
 	try {
 		if (resource === "users") {
 			return normalizeList(await window.EducInspectApi.adminUsers());
 		}
-		return normalizeList(await window.EducInspectApi.list(resource));
+		return normalizeList(await window.EducInspectApi.list(resource, params));
 	} catch (error) {
 		console.warn(`Impossible de charger ${resource}`, error);
 		return [];
@@ -402,7 +402,25 @@ async function renderSchoolCalendarPage(root) {
 }
 
 async function renderSchoolTeachersPage(root) {
-	const teachers = await fetchList("teachers");
+	const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : JSON.parse(localStorage.getItem('educinspect_user') || '{}');
+	let teachers = [];
+	try {
+		let schoolId = null;
+		if (user?.id) {
+			const schools = await fetchList('schools', { user_id: user.id });
+			const list = Array.isArray(schools) ? schools : normalizeList(schools);
+			if (list && list.length) schoolId = list[0].id;
+		}
+		if (schoolId) {
+			teachers = await fetchList('teachers', { school_id: schoolId });
+		} else {
+			teachers = await fetchList('teachers');
+		}
+	} catch (e) {
+		console.warn('Erreur lors du chargement des enseignants pour cette école', e);
+		teachers = await fetchList('teachers');
+	}
+
 	const render = (list) => {
 		const rows = renderRows(list, (item) => `
 			<tr>
