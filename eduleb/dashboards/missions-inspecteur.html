@@ -136,9 +136,14 @@
 
             function badgeClass(s) {
                 const v = String(s).toLowerCase();
-                if (v.includes("realisee") || v.includes("signe")) return "success";
+                if (v.includes("realisee") || v.includes("signe") || v.includes("termine") || v.includes("done")) return "success";
                 if (v.includes("confirmee") || v.includes("validation")) return "info";
                 return "warning";
+            }
+
+            function isMissionCompleted(status) {
+                const v = String(status).toLowerCase();
+                return v.includes("realisee") || v.includes("signe") || v.includes("termine") || v.includes("done");
             }
 
             function render(list) {
@@ -149,16 +154,19 @@
                     return;
                 }
                 if (count) count.textContent = list.length + " mission(s)";
-                body.innerHTML = list.map(m => `
+                body.innerHTML = list.map(m => {
+                    const actionLabel = isMissionCompleted(m.status) ? "Voir" : "Commencer";
+                    return `
                     <tr>
                         <td><strong>${m.school?.name || "-"}</strong><span class="sub">${m.school?.code || ""}</span></td>
                         <td>${m.school?.commune?.name || "-"}</td>
                         <td>${m.planned_date || "-"}</td>
                         <td>${m.inspector?.user?.name || "-"}</td>
                         <td><span class="badge ${badgeClass(m.status)}">${m.status || "-"}</span></td>
-                        <td><button class="mini-btn">Voir</button></td>
+                        <td><button class="mini-btn" type="button" data-mission-id="${m.id}">${actionLabel}</button></td>
                     </tr>
-                `).join("");
+                `;
+                }).join("");
             }
 
             try {
@@ -189,6 +197,14 @@
             }));
 
             search?.addEventListener("input", applyFilters);
+
+            body.addEventListener("click", (event) => {
+                const button = event.target.closest("button[data-mission-id]");
+                if (!button) return;
+                const missionId = button.dataset.missionId;
+                if (!missionId) return;
+                window.location.href = `creer-rapport-inspecteur.html?mission_id=${encodeURIComponent(missionId)}`;
+            });
         })();
     </script>
 </body>

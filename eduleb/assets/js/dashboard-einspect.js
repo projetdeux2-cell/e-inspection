@@ -93,8 +93,25 @@ function getCurrentInspectorSignature() {
 	const signatureKey = getInspectorSignatureStorageKey(user);
 	return localStorage.getItem(signatureKey) || user.signature_path || "";
 }
+
 function normalizeText(value) {
 	return String(value || "").normalize("NFD").replace(/[\x00-\x7f]/g, (char) => char).replace(/[\x00-\x1f]/g, "").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function getQueryParam(name) {
+	return new URLSearchParams(window.location.search).get(name);
+}
+
+function formatDateForInput(value) {
+	if (!value) return "";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return value;
+	return date.toISOString().slice(0, 10);
+}
+
+function isMissionCompleted(status) {
+	const normalized = normalizeText(status);
+	return normalized.includes("realisee") || normalized.includes("signe") || normalized.includes("termine") || normalized.includes("done");
 }
 
 function isSigned(status) {
@@ -462,9 +479,10 @@ function buildReportPayload(form) {
 		observations: data.get("observations") || "",
 		recommendations: data.get("recommendations") || "",
 		notes: data.get("notes") || "",
+		mission_id: data.get("mission_id") || null,
 		global_score: score,
 		signature_path: signaturePath,
-		id: data.get("report_id") ? data.get("report_id") : Date.now()
+		id: data.get("report_id") || Date.now()
 	};
 }
 
@@ -607,6 +625,20 @@ function getAvailableInspectionSchools(missions) {
 	return schools;
 }
 
+async function fetchMissionById(missionId) {
+	if (!missionId) return null;
+	const id = String(missionId).trim();
+	if (!id) return null;
+
+	try {
+		const mission = await window.EducInspectApi.request(`/missions/${encodeURIComponent(id)}`);
+		return mission;
+	} catch (error) {
+		const missions = normalizeList(await window.EducInspectApi.list("missions"));
+		return missions.find((item) => String(item.id) === id || String(item.mission_id) === id) || null;
+	}
+}
+
 function populateSchoolSelect(select, schools) {
 	if (!select) return;
 	if (!schools.length) {
@@ -661,7 +693,7 @@ function setupReportBuilder() {
 
 	const pendingEdit = getPendingEditReport();
 
-	loadReportSchools(schoolSelect).then((schools) => {
+	loadReportSchools(schoolSelect).then(async (schools) => {
 		availableSchools = schools;
 		if (pendingEdit) {
 			if (pendingEdit.school) {
@@ -681,12 +713,43 @@ function setupReportBuilder() {
 			if (reportIdField && pendingEdit.id) {
 				reportIdField.value = pendingEdit.id;
 			}
-                    if (pendingEdit.status && isSigned(pendingEdit.status)) {
+			if (pendingEdit.status && isSigned(pendingEdit.status)) {
 				form.querySelectorAll("input, select, textarea, button[type='submit']").forEach((input) => {
 					if (input !== exportButton) input.disabled = true;
 				});
 			}
 			update();
+		}
+
+		const missionId = getQueryParam("mission_id");
+		if (missionId && !pendingEdit) {
+			const mission = await fetchMissionById(missionId);
+			if (mission) {
+				const schoolName = mission.school?.name || mission.school_name || "";
+				const teacherName = mission.teacher?.name || mission.teacher_name || mission.teacher || "";
+				const missionDate = formatDateForInput(mission.planned_date || mission.date || mission.inspection_date);
+				const missionStatus = mission.status || "Planifiee";
+
+				if (schoolSelect && schoolName) {
+					form.elements.school.value = schoolName;
+				}
+				if (form.elements.teacher && teacherName) {
+					form.elements.teacher.value = teacherName;
+				}
+				if (form.elements.date && missionDate) {
+					form.elements.date.value = missionDate;
+				}
+				if (form.elements.status) {
+					form.elements.status.value = isMissionCompleted(missionStatus) ? "Signe" : "Planifiee";
+				}
+				const missionIdField = form.querySelector("[name='mission_id']");
+				if (missionIdField) {
+					missionIdField.value = mission.id;
+				}
+				const report = buildReportPayload(form);
+				persistPendingEditReport(report);
+				update();
+			}
 		}
 	});
 
@@ -1049,13 +1112,21 @@ async function loadInspectorDashboard() {
 		fetchList("recommendations")
 	]);
 
-	const missions = normalizeList(missionsData).map((item) => ({
-		school: item.school?.name || item.school_name || "Ecole",
-		commune: item.school?.commune?.name || "-",
-		date: safeText(item.planned_date || item.date),
-		status: safeText(item.status, "Planifiee"),
-		id: item.id
-	}));
+	const currentUser = getCurrentUser();
+	const currentInspectorId = currentUser?.id || currentUser?.user_id || "";
+	const missions = normalizeList(missionsData)
+		.filter((item) => {
+			const inspectorId = item.inspector?.user?.id || item.inspector?.id || item.inspector_id;
+			return String(inspectorId) === String(currentInspectorId) || isMissionCompleted(item.status);
+		})
+		.map((item) => ({
+			school: item.school?.name || item.school_name || "Ecole",
+			commune: item.school?.commune?.name || "-",
+			date: safeText(item.planned_date || item.date),
+			status: safeText(item.status, "Planifiee"),
+			id: item.id,
+			raw: item
+		}));
 
 	const inspections = normalizeList(inspectionsData);
 	const recs = normalizeList(recsData);
