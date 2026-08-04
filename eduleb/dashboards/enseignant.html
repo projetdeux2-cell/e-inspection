@@ -9,37 +9,168 @@
 		<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
 		<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
 		<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+		<style>
+			/* Button styles used on ajouter-* pages */
+			.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;background:#2a6df4;color:#fff;font-weight:700;border-radius:10px;border:none;text-decoration:none;box-shadow:0 4px 12px rgba(42,109,244,0.18);}
+			.btn-primary:hover{background:#1a5ad9;transform:translateY(-1px)}
+			.quick-links{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:10px;}
+			.card-link{display:flex;flex-direction:column;gap:10px;padding:22px;border-radius:22px;background:#F8FAFF;border:1px solid rgba(60,130,246,0.12);color:#111827;text-decoration:none;box-shadow:0 10px 30px rgba(15,23,42,0.06);transition:transform .25s,box-shadow .25s;}
+			.card-link:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(15,23,42,0.12);}
+			.card-link span{font-size:18px;color:#3C82F6;}
+			.card-link strong{font-size:16px;color:#111827;}
+			.card-link small{font-size:13px;color:#64748B;line-height:1.5;}
+			.summary-list{display:grid;gap:14px;margin:0;padding:0;list-style:none;}
+			.summary-list li{background:#F8FAFF;border:1px solid #E2E8F0;border-radius:20px;padding:16px;}
+			.summary-list li strong{font-size:15px;margin-bottom:6px;display:block;}
+			.summary-list li span{font-size:13px;color:#64748B;}
+			.tips-panel p{color:#475569;margin-bottom:18px;line-height:1.8;}
+			.tips-panel ul{margin:0;padding:0;list-style:none;display:grid;gap:12px;}
+			.tips-panel ul li{display:flex;gap:10px;align-items:flex-start;color:#334155;font-size:14px;}
+			.tips-panel ul li span{margin-top:3px;color:#334155;}
+			@media(max-width:900px){.quick-links{grid-template-columns:1fr}.content-grid{grid-template-columns:1fr}.panel{padding:22px}}
+			@media(max-width:640px){.panel{padding:18px}.card-link{padding:18px}}
+		</style>
 	</head>
 	<body data-required-role="enseignant">
 		<div class="app-shell">
 			<aside class="sidebar">
-				<a class="brand" href="../index.html"><img src="../assets/img/logo.png" alt="EducInspect"><span>EducInspect</span></a>
-				<div class="profile"><div class="avatar">EN</div><div><strong data-user-name>Enseignant</strong><p data-user-role>Suivi pedagogique</p></div></div>
+				<a class="brand" href="../index.html"><img src="../assets/img/logo1.png" alt="EducInspect"><span>EducInspect</span></a>
+<div class="profile"><div class="avatar">EN</div><div><strong data-user-name>Enseignant</strong><p data-user-role>Suivi pédagogique</p></div></div>
 				<nav class="side-nav">
 					<a class="active" href="enseignant.html"><span class="ti-blackboard"></span>Enseignant</a>
-					<a href="#rapports-enseignant"><span class="ti-files"></span>Rapports</a>
-					<a href="#observations"><span class="ti-book"></span>Observations</a>
-					<a href="#actions-pedagogiques"><span class="ti-check-box"></span>Actions pedagogiques</a>
-					<a href="deconnexion.html"><span class="ti-power-off"></span>Deconnexion</a>
+					<a href="enseignant-rapport.html"><span class="ti-files"></span>Rapports</a>
+						<a href="enseignant-observation.html"><span class="ti-book"></span>Bilans</a>
+						<a href="enseignant-Actions-pedagogiques.html"><span class="ti-check-box"></span>Actions pédagogiques</a>
+						<a href="profile.html"><span class="ti-settings"></span>Paramètres</a>
+						<a href="deconnexion.html"><span class="ti-power-off"></span>Déconnexion</a>
 				</nav>
 				<p class="copyright">&copy; 2026 EducInspect</p>
 			</aside>
 			<main class="main">
 				<header class="topbar">
 					<button class="menu-btn" type="button"><span class="ti-menu"></span></button>
-					<div class="search"><span class="ti-search"></span><input data-dashboard-search type="search" placeholder="Rechercher une observation, une action..."></div>
+					<div class="search"><span class="ti-search"></span><input type="search" placeholder="Rechercher une ressource pédagogique..."></div>
 					<div class="top-actions"><button class="icon-btn" type="button"><span class="ti-bell"></span><em>1</em></button><div class="user-menu"><span class="ti-user"></span> <span data-user-role>Enseignant</span></div></div>
 				</header>
 				<section class="dashboard-head">
-					<div><p class="eyebrow">Espace enseignant</p><h1>Mon suivi pedagogique</h1><p>Consultez vos observations, suivez vos actions pedagogiques et gardez un oeil sur les recommandations de l'inspection.</p></div>
-					<div class="period"><span class="ti-book"></span> Classe CP1</div>
+					<div><p class="eyebrow">Mon espace enseignant</p><h1>Mon tableau de bord</h1><p>Accède rapidement à tes indicateurs, tes priorités de classe et tes ressources pédagogiques.</p></div>
+					<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+						<div class="period"><span class="ti-book"></span> <span data-teacher-class>Classe CP1</span></div>
+						<a class="btn-primary" href="profile.html"><span class="ti-pencil"></span> Modifier mon profil</a>
+					</div>
 				</section>
 				<section class="stats-grid">
-					<div class="stat-card blue"><span class="ti-files"></span><div><p>Rapports consultables</p><strong data-api-stat="reports">0</strong><small>Cette annee</small></div></div>
-					<div class="stat-card green"><span class="ti-check"></span><div><p>Actions terminees</p><strong data-api-stat="done">0</strong><small>Suivi classe</small></div></div>
-					<div class="stat-card teal"><span class="ti-alert"></span><div><p>Actions attendues</p><strong data-api-stat="pending">0</strong><small>A realiser</small></div></div>
-					<div class="stat-card yellow"><span class="ti-star"></span><div><p>Derniere appreciation</p><strong>Bien</strong><small>Inspection</small></div></div>
-					<div class="stat-card purple"><span class="ti-calendar"></span><div><p>Prochain suivi</p><strong>20</strong><small>Aout 2026</small></div></div>
+					<div class="stat-card blue"><span class="ti-files"></span><div><p>Rapports consultables</p><strong data-api-stat="reports">3</strong><small>Cette annee</small></div></div>
+					<div class="stat-card green"><span class="ti-check"></span><div><p>Actions terminees</p><strong data-api-stat="actions_done">2</strong><small>Suivi classe</small></div></div>
+					<div class="stat-card teal"><span class="ti-alert"></span><div><p>Actions attendues</p><strong data-api-stat="actions_pending">3</strong><small>À réaliser</small></div></div>
+					<div class="stat-card yellow"><span class="ti-star"></span><div><p>Dernière appréciation</p><strong>Bien</strong><small>Inspection</small></div></div>
+					<div class="stat-card purple"><span class="ti-calendar"></span><div><p>Prochain suivi</p><strong>20</strong><small>Août 2026</small></div></div>
 				</section>
-				<section class="content-grid"></section>
-				<section class="workspace-grid"></section>
+				<section class="content-grid">
+					<div class="panel quick-actions">
+						<div class="panel-head"><h2>Actions rapides</h2></div>
+						<div class="quick-links">
+							<a class="card-link" href="enseignant-rapport.html"><span class="ti-files"></span><strong>Voir mes rapports</strong><small>Accéder aux derniers rapports</small></a>
+							<a class="card-link" href="enseignant-observation.html"><span class="ti-book"></span><strong>Voir les bilans</strong><small>Consulter le suivi de classe</small></a>
+							<a class="card-link" href="enseignant-Actions-pedagogiques.html"><span class="ti-check-box"></span><strong>Actions pédagogiques</strong><small>Mettre à jour vos priorités</small></a>
+						</div>
+					</div>
+					<div class="panel summary-panel">
+						<div class="panel-head"><h2>À faire cette semaine</h2></div>
+						<ul class="summary-list">
+							<li><strong>Préparer la séance de mathématiques</strong><span>Ressources et objectifs</span></li>
+							<li><strong>Analyser les retours des élèves</strong><span>Identifier les points clés</span></li>
+							<li><strong>Planifier le suivi individuel</strong><span>3 élèves prioritaires</span></li>
+						</ul>
+					</div>
+					<div class="panel tips-panel">
+						<div class="panel-head"><h2>Conseils pédagogiques</h2></div>
+						<p>Utilise ce tableau de bord pour centraliser tes actions, préparer tes rapports et garder le lien avec ta classe.</p>
+						<ul>
+							<li><span class="ti-check"></span><span>Maintiens un carnet de suivi régulier</span></li>
+							<li><span class="ti-check"></span><span>Planifie les retours personnalisés</span></li>
+							<li><span class="ti-check"></span><span>Priorise les accompagnements clés</span></li>
+						</ul>
+					</div>
+				</section>
+			</main>
+		</div>
+		<script src="../assets/js/api-einspect.js"></script>
+		<script src="../assets/js/role-guard-einspect.js"></script>
+		<script src="../assets/js/dashboard-einspect.js"></script>
+		<script src="../assets/js/role-dynamic-einspect.js"></script>
+	<script>
+		(async () => {
+			if (!window.EducInspectApi?.token) return;
+			try {
+				const data = await window.EducInspectApi.dashboard();
+				const apiStat = {
+					reports: data.reports || data.inspections || 0,
+					actions_done: data.recommendations_done || 0,
+					actions_pending: data.recommendations_todo || 0
+				};
+				document.querySelectorAll("[data-api-stat]").forEach((node) => {
+					const key = node.dataset.apiStat;
+					if (apiStat[key] === undefined) return;
+					node.textContent = apiStat[key];
+				});
+			} catch (e) {
+				console.warn("Chargement dashboard enseignant impossible", e);
+			}
+		})();
+	</script>
+	<script>
+		(async () => {
+			const teacherClassLabel = document.querySelector('[data-teacher-class]');
+			if (!teacherClassLabel) return;
+			teacherClassLabel.textContent = 'Chargement...';
+			console.log('enseignant dashboard: init class loader');
+			if (!window.EducInspectApi?.token) {
+				console.warn('enseignant dashboard: token absent');
+				teacherClassLabel.textContent = 'Classe indisponible';
+				return;
+			}
+
+			const storedUser = JSON.parse(localStorage.getItem('educinspect_user') || '{}');
+			const userId = storedUser?.id;
+			let user = storedUser;
+
+			if (!userId) {
+				try {
+					const response = await window.EducInspectApi.me();
+					user = response.user || response;
+				} catch (e) {
+					console.warn('Impossible de charger l\'utilisateur', e);
+					teacherClassLabel.textContent = 'Classe indisponible';
+					return;
+				}
+			}
+
+			if (!user?.id) {
+				teacherClassLabel.textContent = 'Classe indisponible';
+				return;
+			}
+
+			try {
+				console.log('enseignant dashboard: user id', user.id);
+				const response = await window.EducInspectApi.list('teachers', { user_id: user.id });
+				const teachers = Array.isArray(response) ? response : Array.isArray(response?.data) ? response.data : [];
+				console.log('enseignant dashboard: teachers response', teachers);
+				const teacher = teachers[0];
+				if (teacher?.grade) {
+					teacherClassLabel.textContent = `Classe ${teacher.grade}`;
+				} else if (teacher?.school?.name) {
+					teacherClassLabel.textContent = teacher.school.name;
+				} else if (teacher?.name) {
+					teacherClassLabel.textContent = teacher.name;
+				} else {
+					teacherClassLabel.textContent = 'Classe indisponible';
+				}
+				teacherClassLabel.dataset.loaded = 'true';
+			} catch (e) {
+				console.warn('Impossible de charger la classe enseignant', e);
+				teacherClassLabel.textContent = 'Classe indisponible';
+			}
+		})();
+	</script>

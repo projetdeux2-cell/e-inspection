@@ -39,6 +39,20 @@ const dashboardState = {
 	recommendations: [...demoRecommendations]
 };
 
+window.InspectorReportPage = window.InspectorReportPage || {
+	allReports: [],
+	updateSummary: null,
+	addReport(report) {
+		if (!Array.isArray(this.allReports)) {
+			this.allReports = [];
+		}
+		this.allReports.unshift(report);
+		if (typeof this.updateSummary === "function") {
+			this.updateSummary(this.allReports);
+		}
+	}
+};
+
 function normalizeList(payload) {
 	if (Array.isArray(payload)) return payload;
 	if (Array.isArray(payload?.data)) return payload.data;
@@ -49,10 +63,145 @@ function safeText(value, fallback = "-") {
 	return value === undefined || value === null || value === "" ? fallback : value;
 }
 
+function sortListByLabel(items, labelFn) {
+	const getLabel = (item) => {
+		if (!item) return "";
+		const value = labelFn
+			? labelFn(item)
+			: (item.name || item.school || item.school_name || item.school?.name || item.mission?.school?.name || item.reference || item.ref || item.description || "");
+		return String(value || "").toLowerCase();
+	};
+	return [...(items || [])].sort((a, b) => getLabel(a).localeCompare(getLabel(b), "fr"));
+}
+
 function parseDate(value) {
 	if (!value) return "-";
 	const date = new Date(value);
 	return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("fr-FR");
+}
+
+function getCurrentUser() {
+	try {
+		return JSON.parse(localStorage.getItem("educinspect_user") || "{}") || {};
+	} catch (error) {
+		return {};
+	}
+}
+
+function getInspectorSignatureStorageKey(user = {}) {
+	const id = user?.id || user?.user_id;
+	return id ? `educinspect_signature_${id}` : "educinspect_signature";
+}
+
+function getCurrentInspectorSignature() {
+	const user = getCurrentUser();
+	const roles = Array.isArray(user.roles)
+		? user.roles.map((role) => (typeof role === "string" ? role : role?.name)).filter(Boolean)
+		: [];
+	if (!roles.includes("inspecteur")) {
+		return "";
+	}
+	const signatureKey = getInspectorSignatureStorageKey(user);
+	return localStorage.getItem(signatureKey) || user.signature_path || "";
+}
+
+function normalizeText(value) {
+	return String(value || "").normalize("NFD").replace(/[\x00-\x7f]/g, (char) => char).replace(/[\x00-\x1f]/g, "").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function getQueryParam(name) {
+	return new URLSearchParams(window.location.search).get(name);
+}
+
+function formatDateForInput(value) {
+	if (!value) return "";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return value;
+	return date.toISOString().slice(0, 10);
+}
+
+function isMissionCompleted(status) {
+	const normalized = normalizeText(status);
+	return normalized.includes("realisee") || normalized.includes("signe") || normalized.includes("termine") || normalized.includes("done");
+}
+
+function isSigned(status) {
+	return normalizeText(status).includes("signe");
+}
+
+function isReportSigned(status) {
+	const normalized = normalizeText(status);
+	return normalized.includes("signe") || normalized.includes("complete") || normalized.includes("completed");
+}
+
+function normalizeReportStatus(status) {
+	const value = normalizeText(status);
+	if (value.includes("signe") || value.includes("complete") || value.includes("completed")) return "Complete";
+	if (value.includes("validation") || value.includes("encours") || value.includes("en cours") || value.includes("pending") || value.includes("in_progress")) return "En cours";
+	if (value.includes("plan")) return "Planifiee";
+	return status || "En cours";
+}
+
+function hasInspectorSignature(report) {
+	return Boolean(report?.signature_path || getCurrentInspectorSignature());
+}
+
+function isSignedReport(report) {
+	return isReportSigned(report?.status) && hasInspectorSignature(report);
+}
+
+function reportActionButtons(report) {
+	const reportKey = report.id || report.reference || report.ref || "";
+	if (isSignedReport(report)) {
+		return `<button class="mini-btn" type="button" data-download-report="${reportKey}">Télécharger</button>`;
+	}
+	return `<div class="action-stack"><button class="mini-btn" type="button" data-edit-report="${reportKey}">Modifier</button><button class="mini-btn" type="button" data-delete-report="${reportKey}">Supprimer</button></div>`;
+}
+
+function getSavedReportIndex(reportId) {
+	const reports = getInboxReports();
+	return reports.findIndex((item) => String(item.id) === String(reportId));
+}
+
+function updateSavedReport(report) {
+	const reports = getInboxReports();
+	const index = reports.findIndex((item) => String(item.id) === String(report.id));
+	if (index >= 0) {
+		reports[index] = report;
+	} else {
+		reports.unshift(report);
+	}
+	localStorage.setItem(INBOX_KEY, JSON.stringify(reports));
+}
+
+function deleteSavedReport(reportId) {
+	const reports = getInboxReports();
+	const remaining = reports.filter((item) => String(item.id) !== String(reportId));
+	localStorage.setItem(INBOX_KEY, JSON.stringify(remaining));
+}
+
+function clearPendingEditReport() {
+	localStorage.removeItem("educinspect_edit_report");
+}
+
+function persistPendingEditReport(report) {
+	localStorage.setItem("educinspect_edit_report", JSON.stringify(report));
+}
+
+function getPendingEditReport() {
+	try {
+		return JSON.parse(localStorage.getItem("educinspect_edit_report") || "null");
+	} catch {
+		return null;
+	}
+}
+
+function scoreColor(score) {
+	if (typeof score !== "number") return "#6b7280";
+	if (score >= 80) return "#10B981";
+	if (score >= 60) return "#3C82F6";
+	if (score >= 40) return "#F97316";
+	return "#EF4444";
 }
 
 function mapMission(item) {
@@ -90,9 +239,9 @@ async function loadRemoteDashboardData() {
 			window.EducInspectApi.list("recommendations")
 		]);
 
-		dashboardState.missions = normalizeList(missionsPayload).map(mapMission);
-		dashboardState.reports = normalizeList(inspectionsPayload).map(mapInspection);
-		dashboardState.recommendations = normalizeList(recommendationsPayload).map(mapRecommendation);
+		dashboardState.missions = sortListByLabel(normalizeList(missionsPayload).map(mapMission), (mission) => mission.school);
+		dashboardState.reports = sortListByLabel(normalizeList(inspectionsPayload).map(mapInspection), (report) => report.school);
+		dashboardState.recommendations = sortListByLabel(normalizeList(recommendationsPayload).map(mapRecommendation));
 	} catch (error) {
 		console.warn("Chargement des donnees API du dashboard impossible, maintien des donnees de demonstration.", error);
 	}
@@ -101,6 +250,7 @@ async function loadRemoteDashboardData() {
 function renderMissions(list = dashboardState.missions) {
 	const body = document.querySelector("[data-missions-body]");
 	if (!body) return;
+	list = sortListByLabel(list, (mission) => mission.school);
 	body.innerHTML = list.map((mission) => `
 		<tr>
 			<td><strong>${mission.school}</strong><span>${mission.city}</span></td>
@@ -116,6 +266,7 @@ function renderMissions(list = dashboardState.missions) {
 function renderReports(list = dashboardState.reports) {
 	const body = document.querySelector("[data-reports-body]");
 	if (!body) return;
+	list = sortListByLabel(list, (report) => report.school);
 	body.innerHTML = list.map((report) => `
 		<tr>
 			<td><strong>${report.ref}</strong><span>${report.school}</span></td>
@@ -126,6 +277,148 @@ function renderReports(list = dashboardState.reports) {
 		</tr>
 	`).join("");
 	document.querySelectorAll("[data-count='reports']").forEach((item) => item.textContent = list.length);
+}
+
+function renderInspectorReports(list = []) {
+	const body = document.querySelector("[data-reports-body]");
+	const count = document.querySelector("[data-reports-count]");
+	if (!body) return;
+	if (!list.length) {
+		body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><span class="ti-files"></span><h4>Aucun rapport</h4><p>Aucun rapport ne correspond.</p></div></td></tr>';
+		if (count) count.textContent = "0 rapport(s)";
+		return;
+	}
+	body.innerHTML = list.map((report) => {
+		const score = report.global_score || report.score || 0;
+		return `
+			<tr>
+				<td><strong>${report.reference || report.ref || `RIP-${report.id || "?"}`}</strong></td>
+				<td><span class="sub">${report.school || report.mission?.school?.name || "-"}</span></td>
+				<td>${report.date || report.inspection_date || "-"}</td>
+				<td class="score-cell" style="color:${scoreColor(score)}">${score}%</td>
+				<td><span class="badge ${badgeClass(report.status)}">${report.status || "-"}</span></td>
+				<td>${reportActionButtons(report)}</td>
+			</tr>
+		`;
+	}).join("");
+	if (count) count.textContent = `${list.length} rapport(s)`;
+}
+
+function renderInspectorSummary(reports = []) {
+	const totalEl = document.querySelector("[data-total]");
+	const signedEl = document.querySelector("[data-signed]");
+	const avgEl = document.querySelector("[data-avg-score]");
+	if (totalEl) totalEl.textContent = reports.length;
+    if (signedEl) signedEl.textContent = reports.filter((r) => isReportSigned(r.status)).length;
+	const scores = reports.map((r) => Number(r.global_score || r.score || 0)).filter((s) => s > 0);
+	const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+	if (avgEl) avgEl.textContent = avg + "%";
+	window.InspectorReportPage.updateSummary = renderInspectorSummary;
+}
+
+function setupInspectorReportsPage() {
+	const body = document.querySelector("[data-reports-body]");
+	const search = document.querySelector("[data-search-reports]");
+	const filtersContainer = document.querySelector(".filter-group");
+	if (!body) return;
+	const reportFilters = filtersContainer ? filtersContainer.querySelectorAll("[data-filter]") : [];
+	window.InspectorReportPage.allReports = [];
+	window.InspectorReportPage.currentFilter = "all";
+
+	const renderFilteredReports = () => {
+		const query = (search?.value || "").toLowerCase().trim();
+		let filtered = sortListByLabel([...window.InspectorReportPage.allReports], (report) => report.school || report.mission?.school?.name || report.reference);
+		if (window.InspectorReportPage.currentFilter === "signe") {
+			filtered = filtered.filter((report) => isReportSigned(report.status));
+		} else if (window.InspectorReportPage.currentFilter === "validation") {
+			filtered = filtered.filter((report) => !isReportSigned(report.status));
+		}
+		if (query) {
+			filtered = filtered.filter((report) => {
+				const text = [report.reference, report.ref, report.school, report.status, report.mission?.school?.name].join(" ").toLowerCase();
+				return text.includes(query);
+			});
+		}
+		renderInspectorReports(filtered);
+	};
+
+	reportFilters.forEach((button) => {
+		button.addEventListener("click", () => {
+			reportFilters.forEach((b) => b.classList.remove("active"));
+			button.classList.add("active");
+			window.InspectorReportPage.currentFilter = button.dataset.filter || "all";
+			renderFilteredReports();
+		});
+	});
+
+	search?.addEventListener("input", renderFilteredReports);
+
+	const inboxReports = getInboxReports();
+	if (inboxReports.length) {
+		window.InspectorReportPage.allReports = inboxReports.map((report) => ({
+			...report,
+			signature_path: report.signature_path || getCurrentInspectorSignature()
+		}));
+		renderInspectorSummary(window.InspectorReportPage.allReports);
+		renderFilteredReports();
+	}
+
+	if (window.EducInspectApi?.list) {
+		window.EducInspectApi.list("inspections").then((data) => {
+			const reports = (Array.isArray(data) ? data : (data?.data || [])).map((report) => ({
+				...report,
+				signature_path: report.signature_path || getCurrentInspectorSignature()
+			}));
+			if (!reports.length && window.InspectorReportPage.allReports.length) return;
+			window.InspectorReportPage.allReports = reports;
+			renderInspectorSummary(window.InspectorReportPage.allReports);
+			renderFilteredReports();
+		}).catch(() => {});
+	}
+
+	body.addEventListener("click", async (event) => {
+		const downloadBtn = event.target.closest("[data-download-report]");
+		const viewBtn = event.target.closest("[data-view-report]");
+		const editBtn = event.target.closest("[data-edit-report]");
+		const deleteBtn = event.target.closest("[data-delete-report]");
+		if (downloadBtn) {
+			event.preventDefault();
+			const reportKey = downloadBtn.dataset.downloadReport;
+			const report = window.InspectorReportPage.allReports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
+			if (report) {
+				exportReportAsPdf(report);
+			}
+		}
+		if (viewBtn) {
+			event.preventDefault();
+			const reportKey = viewBtn.dataset.viewReport;
+			const report = window.InspectorReportPage.allReports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
+			if (report) {
+				openReportPdf(report);
+			}
+		}
+		if (editBtn) {
+			event.preventDefault();
+			const reportKey = editBtn.dataset.editReport;
+			const report = window.InspectorReportPage.allReports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
+			if (report && !isReportSigned(report.status)) {
+				persistPendingEditReport(report);
+				window.location.href = "creer-rapport-inspecteur.html";
+			}
+		}
+		if (deleteBtn) {
+			event.preventDefault();
+			const reportKey = deleteBtn.dataset.deleteReport;
+			const report = window.InspectorReportPage.allReports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
+			if (report && !isReportSigned(report.status)) {
+				if (window.confirm('Voulez-vous supprimer ce rapport ?')) {
+					deleteSavedReport(reportKey);
+					window.InspectorReportPage.allReports = window.InspectorReportPage.allReports.filter((item) => String(item.id) !== String(reportKey) && String(item.reference) !== String(reportKey) && String(item.ref) !== String(reportKey));
+					renderFilteredReports();
+				}
+			}
+		}
+	});
 }
 
 function renderRecommendations() {
@@ -199,22 +492,453 @@ function setupInspectionScore() {
 	update();
 }
 
-function setupReportPreview() {
+function buildReportPayload(form) {
+	const data = new FormData(form);
+	const preparation = Number(data.get("preparation") || 0);
+	const pedagogie = Number(data.get("pedagogie") || 0);
+	const gestion = Number(data.get("gestion") || 0);
+	const documents = Number(data.get("documents") || 0);
+	const score = Math.round((preparation + pedagogie + gestion + documents) / 4);
+	const status = data.get("status") || "En validation";
+	const signaturePath = isReportSigned(status) ? getCurrentInspectorSignature() : undefined;
+	return {
+		reference: data.get("reference") || `RIP-${new Date().getFullYear()}-${Math.floor(Math.random() * 900 + 100)}`,
+		school: data.get("school") || "Ecole",
+		teacher: data.get("teacher") || "",
+		date: data.get("date") || new Date().toISOString().slice(0, 10),
+		status,
+		preparation,
+		pedagogie,
+		gestion,
+		documents,
+		observations: data.get("observations") || "",
+		recommendations: data.get("recommendations") || "",
+		notes: data.get("notes") || "",
+		mission_id: data.get("mission_id") || null,
+		global_score: score,
+		signature_path: signaturePath,
+		id: data.get("report_id") || Date.now()
+	};
+}
+
+const INBOX_KEY = "educinspect_inbox";
+
+function getInboxReports() {
+	try { return JSON.parse(localStorage.getItem(INBOX_KEY) || "[]"); }
+	catch { return []; }
+}
+
+function saveReportToInbox(report) {
+	const reports = getInboxReports();
+	reports.unshift(report);
+	localStorage.setItem(INBOX_KEY, JSON.stringify(reports));
+}
+
+function renderReportDocument(report) {
+	const signaturePath = report.signature_path || getCurrentInspectorSignature();
+	return `
+		<div class="report-doc">
+			<h3>Rapport d'inspection pedagogique</h3>
+			<div class="report-row"><div><strong>Reference</strong><span>${report.reference}</span></div><div><strong>Ecole</strong><span>${report.school}</span></div></div>
+			<div class="report-row"><div><strong>Date</strong><span>${report.date}</span></div><div><strong>Statut</strong><span>${report.status}</span></div></div>
+			<div class="report-row"><div><strong>Score global</strong><span>${report.global_score}%</span></div><div><strong>Evaluation</strong><span>${report.global_score >= 80 ? "Excellent" : report.global_score >= 60 ? "Bien" : report.global_score >= 40 ? "Moyen" : "Insuffisant"}</span></div></div>
+			<div><strong>Details</strong></div>
+			<ul>
+				<li>Preparation des cours : ${report.preparation}%</li>
+				<li>Pedagogie et methodes : ${report.pedagogie}%</li>
+				<li>Gestion de classe : ${report.gestion}%</li>
+				<li>Documents scolaires : ${report.documents}%</li>
+			</ul>
+			<div><strong>Observations</strong><p>${report.observations || "Aucune observation saisie."}</p></div>
+			<div><strong>Recommandations</strong><p>${report.recommendations || "Aucune recommandation."}</p></div>
+			<div><strong>Notes</strong><p>${report.notes || "Aucune note."}</p></div>
+			${signaturePath ? `<div style="margin-top:24px;"><strong>Signature</strong><div><img src="${signaturePath}" alt="Signature inspecteur" style="max-width:240px;border:1px solid #e4e9f0;border-radius:12px;padding:12px;margin-top:10px;" /></div></div>` : ""}
+		</div>
+	`;
+}
+
+function updateReportPreview(report) {
 	const preview = document.querySelector("[data-report-preview]");
 	if (!preview) return;
-	document.addEventListener("click", (event) => {
-		const button = event.target.closest("[data-preview]");
-		if (!button) return;
-		const report = dashboardState.reports.find((item) => item.ref === button.dataset.preview);
-		if (!report) return;
-		preview.innerHTML = `
-			<h3>Rapport d'inspection pedagogique</h3>
-			<p><strong>Reference :</strong> ${report.ref}</p>
-			<p><strong>Ecole :</strong> ${report.school}</p>
-			<p><strong>Date :</strong> ${report.date}</p>
-			<p><strong>Score global :</strong> ${report.score}%</p>
-			<p><strong>Statut :</strong> ${report.status}</p>
-		`;
+	preview.innerHTML = renderReportDocument(report);
+}
+
+function appendReportRow(report) {
+	const body = document.querySelector("[data-reports-body]");
+	if (!body) return;
+	const rowHtml = `
+		<tr>
+			<td><strong>${report.reference}</strong><span class="sub">${report.school}</span></td>
+			<td>${report.date}</td>
+			<td class="score-cell" style="color:${scoreColor(report.global_score)}">${report.global_score}%</td>
+			<td><span class="badge ${badgeClass(report.status)}">${report.status}</span></td>
+			<td><button class="mini-btn" type="button" data-preview="${report.reference}">Apercu</button></td>
+		</tr>
+	`;
+	if (body.children.length === 1 && body.children[0].querySelector(".empty-state")) {
+		body.innerHTML = rowHtml;
+	} else {
+		body.insertAdjacentHTML("beforeend", rowHtml);
+	}
+	const count = document.querySelector("[data-reports-count]");
+	if (count) {
+		const current = Number((count.textContent.match(/\d+/) || [0])[0]);
+		count.textContent = `${current + 1} rapport(s)`;
+	}
+	window.InspectorReportPage.addReport(report);
+}
+
+function updateReportBuilderPreviewLabels(form) {
+	form.querySelectorAll("[data-report-score]").forEach((input) => {
+		const label = form.querySelector(`[data-criteria-label="${input.name}"]`);
+		if (label) label.textContent = `${input.value}%`;
+	});
+}
+
+async function openReportPdf(report) {
+	if (!report) return;
+
+	if (report.id && window.EducInspectApi?.token) {
+		try {
+			const response = await fetch(`${window.EducInspectApi.baseUrl}/reports/${report.id}/pdf`, {
+				method: "GET",
+				headers: {
+					Accept: "application/pdf",
+					Authorization: `Bearer ${window.EducInspectApi.token}`
+				}
+			});
+
+			if (!response.ok) {
+				let message = "Impossible d'ouvrir le rapport.";
+				try {
+					const data = await response.json();
+					message = data.message || message;
+				} catch {}
+				throw new Error(message);
+			}
+
+			const blob = await response.blob();
+			const url = URL.createObjectURL(blob);
+			window.open(url, "_blank");
+			setTimeout(() => URL.revokeObjectURL(url), 10000);
+			return;
+		} catch (error) {
+			window.alert(error?.message || "Erreur lors de l'ouverture du PDF.");
+			return;
+		}
+	}
+
+	const payload = {
+		reference: report.reference || report.ref || `RIP-${report.id || Date.now()}`,
+		school: report.school || report.school_name || report.mission?.school?.name || "",
+		teacher: report.teacher || report.teacher_name || "",
+		date: report.date || report.inspection_date || new Date().toISOString().slice(0, 10),
+		status: report.status || "En cours",
+		preparation: report.preparation || 0,
+		pedagogie: report.pedagogie || 0,
+		gestion: report.gestion || 0,
+		documents: report.documents || 0,
+		observations: report.observations || "",
+		recommendations: report.recommendations || "",
+		notes: report.notes || "",
+		global_score: report.global_score || report.score || 0,
+		signature_path: report.signature_path || getCurrentInspectorSignature()
+	};
+
+	try {
+		const headers = {
+			Accept: "application/pdf",
+			"Content-Type": "application/json",
+		};
+		if (window.EducInspectApi?.token) {
+			headers.Authorization = `Bearer ${window.EducInspectApi.token}`;
+		}
+
+		const response = await fetch(`${window.EducInspectApi.baseUrl}/reports/export-pdf`, {
+			method: "POST",
+			headers,
+			body: JSON.stringify(payload)
+		});
+
+		if (!response.ok) {
+			let message = "Impossible d'ouvrir le rapport.";
+			try {
+				const data = await response.json();
+				message = data.message || message;
+			} catch {}
+			throw new Error(message);
+		}
+
+		const blob = await response.blob();
+		const url = URL.createObjectURL(blob);
+		window.open(url, "_blank");
+		setTimeout(() => URL.revokeObjectURL(url), 10000);
+	} catch (error) {
+		window.alert(error?.message || "Erreur lors de l'ouverture du PDF.");
+	}
+}
+
+async function exportReportAsPdf(report) {
+	if (!report) return;
+
+	const exportButton = document.querySelector("[data-export-report]");
+	const originalLabel = exportButton?.textContent || "Exporter PDF";
+	if (exportButton) {
+		exportButton.disabled = true;
+		exportButton.textContent = "Generation du PDF...";
+	}
+
+	try {
+		if (report.id && window.EducInspectApi?.token) {
+			const response = await fetch(`${window.EducInspectApi.baseUrl}/reports/${report.id}/pdf?download=1`, {
+				method: "GET",
+				headers: {
+					Accept: "application/pdf",
+					Authorization: `Bearer ${window.EducInspectApi.token}`
+				}
+			});
+
+			if (!response.ok) {
+				let message = "Une erreur est survenue.";
+				try {
+					const data = await response.json();
+					message = data.message || message;
+				} catch {}
+				throw new Error(message);
+			}
+
+			const blob = await response.blob();
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.download = `rapport-${(report.reference || 'rapport').replace(/[^a-zA-Z0-9-_]/g, '-')}.pdf`;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			setTimeout(() => URL.revokeObjectURL(url), 1000);
+			return;
+		}
+
+		const blob = await EducInspectApi.downloadPdf("/reports/export-pdf", {
+			reference: report.reference,
+			school: report.school,
+			teacher: report.teacher,
+			date: report.date,
+			status: report.status,
+			preparation: report.preparation,
+			pedagogie: report.pedagogie,
+			gestion: report.gestion,
+			documents: report.documents,
+			observations: report.observations,
+			recommendations: report.recommendations,
+			notes: report.notes,
+			global_score: report.global_score,
+			signature_path: report.signature_path
+		});
+
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `rapport-${(report.reference || 'rapport').replace(/[^a-zA-Z0-9-_]/g, '-')}.pdf`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
+	} catch (error) {
+		window.alert("Impossible de generer le PDF : " + (error?.message || "erreur inconnue"));
+	} finally {
+		if (exportButton) {
+			exportButton.disabled = false;
+			exportButton.textContent = originalLabel;
+		}
+	}
+}
+
+function getAvailableInspectionSchools(missions) {
+	const schools = [];
+	const seen = new Set();
+	(missions || []).forEach((mission) => {
+		const name = mission.school?.name || mission.school_name || (typeof mission.school === "string" ? mission.school : undefined);
+		const commune = mission.school?.commune?.name || mission.school?.commune || mission.city || mission.commune;
+		if (!name) return;
+		const key = `${name}||${commune || ""}`;
+		if (seen.has(key)) return;
+		seen.add(key);
+		schools.push({ name, commune });
+	});
+	return schools;
+}
+
+async function fetchMissionById(missionId) {
+	if (!missionId) return null;
+	const id = String(missionId).trim();
+	if (!id) return null;
+
+	try {
+		const mission = await window.EducInspectApi.request(`/missions/${encodeURIComponent(id)}`);
+		return mission;
+	} catch (error) {
+		const missions = normalizeList(await window.EducInspectApi.list("missions"));
+		return missions.find((item) => String(item.id) === id || String(item.mission_id) === id) || null;
+	}
+}
+
+function populateSchoolSelect(select, schools) {
+	if (!select) return;
+	if (!schools.length) {
+		select.innerHTML = '<option value="">Aucune ecole disponible</option>';
+		return;
+	}
+	select.innerHTML = '<option value="">Selectionner une ecole</option>' + schools.map((school) => {
+		const label = school.commune ? `${school.name} (${school.commune})` : school.name;
+		return `<option value="${school.name}">${label}</option>`;
+	}).join("");
+	select.selectedIndex = 1;
+}
+
+async function loadReportSchools(select) {
+	if (!select) return Promise.resolve([]);
+	const loadFromMissions = (missions) => {
+		const schools = getAvailableInspectionSchools(missions);
+		populateSchoolSelect(select, schools);
+		return schools;
+	};
+
+	if (!window.EducInspectApi?.list || !window.EducInspectApi.token) {
+		return Promise.resolve(loadFromMissions(dashboardState.missions));
+	}
+
+	return window.EducInspectApi.list("missions").then((data) => {
+		const missions = normalizeList(data) || data?.missions || [];
+		if (!missions.length) {
+			console.warn("Aucune mission trouvee via l'API, utilisation du fallback local.");
+			return loadFromMissions(dashboardState.missions);
+		}
+		return loadFromMissions(missions);
+	}).catch((error) => {
+		console.warn("Erreur lors du chargement des missions pour les ecoles :", error);
+		return loadFromMissions(dashboardState.missions);
+	});
+}
+
+function setupReportBuilder() {
+	const form = document.querySelector("[data-report-form]");
+	if (!form) return;
+	const exportButton = document.querySelector("[data-export-report]");
+	const schoolSelect = form.querySelector("select[name='school']");
+	const reportIdField = form.querySelector("[name='report_id']");
+	const searchInput = document.querySelector("[data-report-search]");
+	let availableSchools = [];
+
+	const update = () => {
+		updateReportBuilderPreviewLabels(form);
+		updateReportPreview(buildReportPayload(form));
+	};
+
+	const pendingEdit = getPendingEditReport();
+
+	loadReportSchools(schoolSelect).then(async (schools) => {
+		availableSchools = schools;
+		if (pendingEdit) {
+			if (pendingEdit.school) {
+				form.elements.school.value = pendingEdit.school;
+			}
+			if (pendingEdit.reference) form.elements.reference.value = pendingEdit.reference;
+			if (pendingEdit.teacher) form.elements.teacher.value = pendingEdit.teacher;
+			if (pendingEdit.date) form.elements.date.value = pendingEdit.date;
+			if (pendingEdit.status) form.elements.status.value = pendingEdit.status;
+			if (pendingEdit.observations) form.elements.observations.value = pendingEdit.observations;
+			if (pendingEdit.recommendations) form.elements.recommendations.value = pendingEdit.recommendations;
+			if (pendingEdit.notes) form.elements.notes.value = pendingEdit.notes;
+			if (typeof pendingEdit.preparation !== 'undefined') form.elements.preparation.value = pendingEdit.preparation;
+			if (typeof pendingEdit.pedagogie !== 'undefined') form.elements.pedagogie.value = pendingEdit.pedagogie;
+			if (typeof pendingEdit.gestion !== 'undefined') form.elements.gestion.value = pendingEdit.gestion;
+			if (typeof pendingEdit.documents !== 'undefined') form.elements.documents.value = pendingEdit.documents;
+			if (reportIdField && pendingEdit.id) {
+				reportIdField.value = pendingEdit.id;
+			}
+			if (pendingEdit.status && isReportSigned(pendingEdit.status)) {
+				form.querySelectorAll("input, select, textarea, button[type='submit']").forEach((input) => {
+					if (input !== exportButton) input.disabled = true;
+				});
+			}
+			update();
+		}
+
+		const missionId = getQueryParam("mission_id");
+		if (missionId && !pendingEdit) {
+			const mission = await fetchMissionById(missionId);
+			if (mission) {
+				const schoolName = mission.school?.name || mission.school_name || "";
+				const teacherName = mission.teacher?.name || mission.teacher_name || mission.teacher || "";
+				const missionDate = formatDateForInput(mission.planned_date || mission.date || mission.inspection_date);
+				const missionStatus = mission.status || "Planifiee";
+
+				if (schoolSelect && schoolName) {
+					form.elements.school.value = schoolName;
+				}
+				if (form.elements.teacher && teacherName) {
+					form.elements.teacher.value = teacherName;
+				}
+				if (form.elements.date && missionDate) {
+					form.elements.date.value = missionDate;
+				}
+				if (form.elements.status) {
+					form.elements.status.value = isMissionCompleted(missionStatus) ? "Signe" : "Planifiee";
+				}
+				const missionIdField = form.querySelector("[name='mission_id']");
+				if (missionIdField) {
+					missionIdField.value = mission.id;
+				}
+				const report = buildReportPayload(form);
+				persistPendingEditReport(report);
+				update();
+			}
+		}
+	});
+
+	const filterSchoolOptions = () => {
+		if (!schoolSelect || !availableSchools.length) return;
+		const query = (searchInput?.value || "").toLowerCase().trim();
+		const filtered = availableSchools.filter((school) => {
+			return [school.name, school.commune].filter(Boolean).join(" ").toLowerCase().includes(query);
+		});
+		populateSchoolSelect(schoolSelect, filtered);
+	};
+
+	searchInput?.addEventListener("input", filterSchoolOptions);
+	form.querySelectorAll("[data-report-score]").forEach((input) => input.addEventListener("input", update));
+	update();
+
+	form.addEventListener("submit", (event) => {
+		event.preventDefault();
+		const report = buildReportPayload(form);
+		if (isReportSigned(report.status) && !report.signature_path) {
+			const goToProfile = window.confirm("Ce rapport est marque comme signe, mais votre signature n'est pas encore enregistree. Voulez-vous aller dans Parametres pour l'ajouter ?");
+			if (goToProfile) {
+				window.location.href = "profile.html";
+			}
+			return;
+		}
+		dashboardState.reports.unshift(report);
+		appendReportRow(report);
+		updateReportPreview(report);
+		saveReportToInbox(report);
+		clearPendingEditReport();
+		const submitButton = form.querySelector("button[type='submit']");
+		if (submitButton) {
+			submitButton.textContent = "Rapport envoye (Direction, Ecole, Enseignant)";
+			submitButton.style.background = "#16A34A";
+			setTimeout(() => {
+				submitButton.textContent = "Enregistrer le rapport";
+				submitButton.style.background = "";
+			}, 2500);
+		}
+	});
+
+	exportButton?.addEventListener("click", () => {
+		const report = buildReportPayload(form);
+		exportReportAsPdf(report);
 	});
 }
 
@@ -390,6 +1114,89 @@ function updateLiveStatus(text) {
 	status.textContent = text;
 }
 
+function formatRelativeTime(value) {
+	if (!value) return "Aucune date";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return value;
+	const diffMinutes = Math.max(1, Math.floor((Date.now() - date.getTime()) / 60000));
+	if (diffMinutes < 60) return `Il y a ${diffMinutes} min`;
+	const diffHours = Math.floor(diffMinutes / 60);
+	if (diffHours < 24) return `Il y a ${diffHours} h`;
+	const diffDays = Math.floor(diffHours / 24);
+	return `Il y a ${diffDays} j`;
+}
+
+function renderAdminRecentActivity(usersData, schoolsData, departmentsData, communesData) {
+	const body = document.querySelector("[data-recent-activity-body]");
+	if (!body) return;
+
+	const records = [
+		{
+			entity: "Comptes utilisateurs",
+			description: "Roles et permissions",
+			updatedAt: normalizeList(usersData).sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))[0]?.created_at || new Date().toISOString(),
+			status: "Synchronise",
+			badge: "success"
+		},
+		{
+			entity: "Referentiel ecoles",
+			description: "Structures scolaires",
+			updatedAt: normalizeList(schoolsData).sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))[0]?.created_at || new Date().toISOString(),
+			status: "A jour",
+			badge: "info"
+		},
+		{
+			entity: "Departements",
+			description: "Cartographie administrative",
+			updatedAt: normalizeList(departmentsData).sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))[0]?.created_at || new Date().toISOString(),
+			status: "A verifier",
+			badge: "warning"
+		},
+		{
+			entity: "Communes",
+			description: "Territoires referencés",
+			updatedAt: normalizeList(communesData).sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0))[0]?.created_at || new Date().toISOString(),
+			status: "Synchronise",
+			badge: "success"
+		}
+	];
+
+	body.innerHTML = records.map((row) => `
+		<tr>
+			<td><strong>${row.entity}</strong><span>${row.description}</span></td>
+			<td>${formatRelativeTime(row.updatedAt)}</td>
+			<td><mark class="badge ${row.badge}">${row.status}</mark></td>
+		</tr>
+	`).join("");
+}
+
+function renderAdminPerformanceSummary(counts) {
+	const performanceNode = document.querySelector("[data-performance-score]");
+	const coverageNode = document.querySelector("[data-coverage-rate]");
+	const activeUsersNode = document.querySelector("[data-active-users-rate]");
+	const reportsValidatedNode = document.querySelector("[data-reports-validated-rate]");
+
+	if (!performanceNode || !coverageNode || !activeUsersNode || !reportsValidatedNode) return;
+
+	const schools = Number(counts.schools || 0);
+	const departments = Number(counts.departments || 0);
+	const communes = Number(counts.communes || 0);
+	const users = Number(counts.users || 0);
+	const inspections = Number(counts.inspections || 0);
+	const missions = Number(counts.missions || 0);
+	const recommendationsDone = Number(counts.recommendations_done || 0);
+
+	const coverageRate = Math.min(99, Math.max(55, Math.round(((schools * 3) + (communes * 2) + departments) / Math.max(1, schools + departments + communes + 1) * 100)));
+	const activeUsersRate = Math.min(99, Math.max(70, Math.round((users / Math.max(1, users + Math.max(1, departments + communes))) * 100)));
+	const reportsValidatedRate = Math.min(99, Math.max(50, Math.round((inspections / Math.max(1, Math.max(inspections, missions))) * 100)));
+	const performanceScore = Math.min(99, Math.max(65, Math.round(((coverageRate * 0.35) + (activeUsersRate * 0.25) + (reportsValidatedRate * 0.25) + (recommendationsDone ? 10 : 5))))) ;
+
+	performanceNode.textContent = `${performanceScore}%`;
+	coverageNode.textContent = `${coverageRate}%`;
+	activeUsersNode.textContent = `${activeUsersRate}%`;
+	reportsValidatedNode.textContent = `${reportsValidatedRate}%`;
+}
+
 async function loadApiDashboard() {
 	const statNodes = document.querySelectorAll("[data-api-stat]");
 	if (!window.EducInspectApi?.token) {
@@ -398,17 +1205,19 @@ async function loadApiDashboard() {
 	}
 
 	try {
-		const [dashboardData, usersData, departmentsData, communesData] = await Promise.all([
+		const [dashboardData, usersData, departmentsData, communesData, schoolsData] = await Promise.all([
 			window.EducInspectApi.dashboard(),
 			window.EducInspectApi.adminUsers(),
 			window.EducInspectApi.list("departments"),
-			window.EducInspectApi.list("communes")
+			window.EducInspectApi.list("communes"),
+			window.EducInspectApi.list("schools")
 		]);
 
 		const counts = {
 			users: normalizeList(usersData).length,
 			departments: normalizeList(departmentsData).length,
 			communes: normalizeList(communesData).length,
+			schools: normalizeList(schoolsData).length,
 			...dashboardData
 		};
 
@@ -418,6 +1227,8 @@ async function loadApiDashboard() {
 			node.textContent = key === "average_score" ? `${counts[key]}%` : counts[key];
 		});
 
+		renderAdminRecentActivity(usersData, schoolsData, departmentsData, communesData);
+		renderAdminPerformanceSummary(counts);
 		renderDashboardChart(roleChartSource(document.body.dataset.requiredRole, counts));
 
 		const notifications = Number(counts.recommendations_todo || 0) + Number(counts.missions || 0);
@@ -431,23 +1242,166 @@ Configuration live · ${counts.users || 0} comptes`);
 	}
 }
 
+async function loadInspectorDashboard() {
+	const role = document.body.dataset.requiredRole;
+	if (role !== "inspecteur") return;
+
+	const missionsBody = document.querySelector("[data-missions-body]");
+	const recsList = document.querySelector("[data-recommendations]");
+	if (!missionsBody && !recsList) return;
+
+	const [missionsData, inspectionsData, recsData] = await Promise.all([
+		fetchList("missions"),
+		fetchList("inspections"),
+		fetchList("recommendations")
+	]);
+
+	const currentUser = getCurrentUser();
+	const currentInspectorId = currentUser?.id || currentUser?.user_id || "";
+	const missionsMapped = normalizeList(missionsData)
+		.filter((item) => {
+			const inspectorId = item.inspector?.user?.id || item.inspector?.id || item.inspector_id;
+			return String(inspectorId) === String(currentInspectorId) || isMissionCompleted(item.status);
+		})
+		.map((item) => ({
+			school: item.school?.name || item.school_name || "Ecole",
+			commune: item.school?.commune?.name || "-",
+			date: safeText(item.planned_date || item.date),
+			status: safeText(item.status, "Planifiee"),
+			id: item.id,
+			raw: item
+		}));
+
+	const missions = sortListByLabel(missionsMapped, (mission) => mission.school);
+
+	const inspections = sortListByLabel(normalizeList(inspectionsData), (item) => item.mission?.school?.name || item.school?.name || item.reference);
+	const recs = sortListByLabel(normalizeList(recsData));
+
+	const reportsBody = document.querySelector("[data-reports-summary-body]");
+	if (reportsBody) {
+		if (!inspections.length) {
+			reportsBody.innerHTML = '<tr><td colspan="5">Aucun rapport disponible.</td></tr>';
+		} else {
+			reportsBody.innerHTML = inspections.slice(0, 5).map((report) => {
+				const score = Number(report.global_score || report.score || 0);
+				return `
+					<tr>
+						<td><strong>${safeText(report.reference || report.ref || `RIP-${report.id || "?"}`)}</strong></td>
+						<td>${safeText(report.school?.name || report.school_name || report.mission?.school?.name || "Ecole")}</td>
+						<td>${parseDate(report.inspection_date || report.date)}</td>
+						<td>${score}%</td>
+						<td><mark class="${badgeClass(report.status)}">${safeText(report.status, "En attente")}</mark></td>
+					</tr>
+				`;
+			}).join("");
+		}
+	}
+
+	if (missionsBody) {
+		if (!missions.length) {
+			missionsBody.innerHTML = '<tr><td colspan="5">Aucune mission assignee.</td></tr>';
+		} else {
+			missionsBody.innerHTML = missions.map((m) => `
+				<tr>
+					<td><strong>${m.school}</strong><span>${m.commune}</span></td>
+					<td>${m.date}</td>
+					<td>${m.commune}</td>
+					<td><mark class="${badgeClass(m.status)}">${m.status}</mark></td>
+					<td><button class="mini-btn" type="button" data-mission-detail="${m.id}">Voir</button></td>
+				</tr>
+			`).join("");
+		}
+	}
+
+	if (recsList) {
+		if (!recs.length) {
+			recsList.innerHTML = '<li>Aucune recommandation en cours</li>';
+		} else {
+			recsList.innerHTML = recs.slice(0, 5).map((item) => {
+				const text = typeof item === "string" ? item : (item.description || item.title || "Recommandation");
+				return `<li><span></span>${text}</li>`;
+			}).join("");
+		}
+	}
+
+	const avgScore = computeAverageScore(inspections);
+	const counts = {
+		missions: missions.length,
+		inspections: inspections.length,
+		schools: new Set(missions.map((m) => m.school)).size || 1,
+		average_score: avgScore,
+		recommendations_todo: recs.filter((r) => !String(r.status || "").toLowerCase().includes("done") && !String(r.status || "").toLowerCase().includes("termine")).length
+	};
+
+	document.querySelectorAll("[data-api-stat]").forEach((node) => {
+		const key = node.dataset.apiStat;
+		if (counts[key] === undefined || counts[key] === null) return;
+		node.textContent = key === "average_score" ? `${counts[key]}%` : counts[key];
+	});
+
+	const perfScore = document.querySelector("[data-performance-score]");
+	if (perfScore) perfScore.textContent = `${avgScore}%`;
+
+	const missionsDone = document.querySelector("[data-missions-done]");
+	if (missionsDone) missionsDone.textContent = counts.inspections;
+
+	const missionsPlanned = document.querySelector("[data-missions-planned]");
+	if (missionsPlanned) missionsPlanned.textContent = counts.missions;
+
+	const recsCount = document.querySelector("[data-recs-count]");
+	if (recsCount) recsCount.textContent = counts.recommendations_todo;
+
+	const notifCount = document.querySelector("[data-notification-count]");
+	if (notifCount) notifCount.textContent = counts.recommendations_todo;
+
+	const liveStatus = document.querySelector("[data-live-status]");
+	if (liveStatus) liveStatus.textContent = `${counts.missions} missions, ${counts.inspections} inspections`;
+
+	renderDashboardChart({ missions: counts.missions, inspections: counts.inspections });
+}
+
+function computeAverageScore(inspections) {
+	if (!inspections.length) return 0;
+	const scores = inspections.map((i) => Number(i.global_score || i.score || 0)).filter((s) => s > 0);
+	if (!scores.length) return 0;
+	return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+}
+
+function setupReportPreview() {
+	const preview = document.querySelector("[data-report-preview]");
+	if (!preview) return;
+	preview.innerHTML = "";
+}
+
 async function initializeDashboard() {
-	await loadRemoteDashboardData();
-	renderMissions();
-	renderReports();
-	if (typeof renderRecommendations === "function") {
-		renderRecommendations();
+	const body = document.body;
+	const isInspectorDashboard = body.dataset.requiredRole === "inspecteur";
+	const skipDashboardInit = body.dataset.skipDashboardInit === "true";
+
+	if (skipDashboardInit) {
+		return;
 	}
 	setupSearch();
 	setupMissionForm();
 	setupInspectionScore();
+	setupReportBuilder();
+	setupInspectorReportsPage();
 	setupReportPreview();
 	setupLogout();
 	setupAdminProfileForm();
-	await loadApiDashboard();
+
+	if (isInspectorDashboard) {
+		await loadInspectorDashboard();
+	} else {
+		await loadRemoteDashboardData();
+		renderMissions();
+		renderReports();
+		renderRecommendations();
+		await loadApiDashboard();
+	}
 }
 
-initializeDashboard();
+window.addEventListener("DOMContentLoaded", initializeDashboard);
 
 function badgeClass(status) {
 	const value = String(status).toLowerCase();

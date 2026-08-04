@@ -9,7 +9,7 @@ class DepartmentController extends Controller
 {
     public function index()
     {
-        return Department::with('communes')->latest()->paginate(20);
+        return Department::with('communes')->orderBy('name')->paginate(20);
     }
 
     public function store(Request $request)

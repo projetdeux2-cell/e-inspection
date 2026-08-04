@@ -8,14 +8,14 @@
 	<link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
 	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 	<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
-	<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+	<link href="../assets/css/dashboard-einspect.css?v=20260730-admin-fix" rel="stylesheet">
 	<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 
 <body data-required-role="admin" data-resource="departments">
 	<div class="app-shell">
 		<aside class="sidebar">
-			<a class="brand" href="../index.html"><img src="../assets/img/logo.png"
+			<a class="brand" href="../index.html"><img src="../assets/img/logo1.png"
 					alt="EducInspect"><span>EducInspect</span></a>
 			<div class="profile">
 				<div class="avatar">AD</div>
@@ -45,21 +45,31 @@
 					<div class="user-menu"><span class="ti-user"></span> <span data-user-role>Admin</span></div>
 				</div>
 			</header>
-			<section class="dashboard-head">
+			<!-- <section class="dashboard-head">
 				<div>
 					<p class="eyebrow">Administration generale</p>
 					<h1>Gestion des departements</h1>
 					<p>Créez, consultez, mettez à jour et supprimez les departements du referentiel.</p>
-				</div>
+				</div> -->
 				<!-- <div class="period"><span class="ti-map-alt"></span> <strong data-live-status>//
 						Configuration live</strong></div> -->
-			</section>
-		</main>
+				<!-- </section> -->
+				<section class="toolbar">
+					<div class="search-box">
+						<span class="ti-search"></span>
+						<input type="search" placeholder="Rechercher un departement par nom, code ou chef-lieu...">
+					</div>
+					<a href="ajouter-departement.html" class="btn-add">
+						<span class="ti-plus"></span>
+						Ajouter un departement
+					</a>
+				</section>
+			</main>
 	</div>
-	<script src="../assets/js/api-einspect.js"></script>
-	<script src="../assets/js/role-guard-einspect.js"></script>
-	<script src="../assets/js/dashboard-einspect.js"></script>
-	<script src="../assets/js/role-dynamic-einspect.js"></script>
+	<script src="../assets/js/api-einspect.js?v=20260729-admin"></script>
+	<script src="../assets/js/role-guard-einspect.js?v=20260729-admin"></script>
+	<script src="../assets/js/dashboard-einspect.js?v=20260729-admin"></script>
+	<script src="../assets/js/role-dynamic-einspect.js?v=20260729-admin"></script>
 </body>
 
 </html>

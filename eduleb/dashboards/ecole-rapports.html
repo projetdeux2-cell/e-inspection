@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rapports - École</title>
+    <link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
+    <link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/fonts/themify-icons.css" rel="stylesheet">
+    <link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body data-required-role="directeur_ecole">
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" href="../index.html"><img src="../assets/img/logo1.png" alt="EducInspect"><span>EducInspect</span></a>
+            <div class="profile"><div class="avatar">DE</div><div><strong data-user-name>Direction d'école</strong><p data-user-role>Suivi local</p></div></div>
+            <nav class="side-nav">
+                <a href="ecole.html"><span class="ti-home"></span>École</a>
+                <a class="active" href="ecole-rapports.html"><span class="ti-files"></span>Rapports</a>
+                <a href="ecole-plan-daction.html"><span class="ti-check-box"></span>Plan d'action</a>
+                <a href="ecole-observations.html"><span class="ti-comments"></span>Observations</a>
+                <a href="ajouter-enseignant.html"><span class="ti-user"></span>Créer un enseignant</a>
+                <a href="ecole-recommandations.html"><span class="ti-star"></span>Recommandations</a>
+                <a href="ecole-calendrier.html"><span class="ti-calendar"></span>Calendrier</a>
+                <a href="ecole-enseignants.html"><span class="ti-user"></span>Équipe</a>
+                <a href="profile.html"><span class="ti-settings"></span>Paramètres</a>
+                <a href="deconnexion.html"><span class="ti-power-off"></span>Déconnexion</a>
+            </nav>
+            <p class="copyright">© 2026 EducInspect</p>
+        </aside>
+        <main class="main">
+            <header class="topbar">
+                <button class="menu-btn" type="button"><span class="ti-menu"></span></button>
+                <div class="search"><span class="ti-search"></span><input data-section-search type="search" placeholder="Rechercher un rapport..."></div>
+                <div class="top-actions"><button class="icon-btn" type="button"><span class="ti-bell"></span><em>0</em></button><div class="user-menu"><span class="ti-user"></span> <span data-user-role>Directeur</span></div></div>
+            </header>
+            <section class="dashboard-head">
+                <div><p class="eyebrow">Consultation école</p><h1>Rapports de l'école</h1><p>Consultez les rapports d'inspection produits pour votre école.</p></div>
+                <div class="period"><span class="ti-files"></span> Rapports</div>
+            </section>
+            <section class="panel">
+                <div class="panel-head"><h2>Rapports d'inspection</h2></div>
+                <div class="panel-copy">Les rapports publiés depuis le backend sont affichés ici, avec lien de consultation et téléchargement.</div>
+                <div data-section-content></div>
+            </section>
+        </main>
+    </div>
+    <script src="../assets/js/api-einspect.js"></script>
+    <script src="../assets/js/role-guard-einspect.js"></script>
+    <script src="../assets/js/dashboard-einspect.js"></script>
+    <script src="../assets/js/role-dynamic-einspect.js"></script>
+    <script>
+		const reportActionsHtml = (report) => {
+			const reportKey = report.id || report.reference || report.ref || "";
+			return `<div class="action-stack"><button class="mini-btn" type="button" data-view-report="${reportKey}">Voir</button><button class="mini-btn" type="button" data-download-report="${reportKey}">Télécharger</button></div>`;
+		};
+
+        (() => {
+            const root = document.querySelector("[data-section-content]");
+            if (!root) return;
+            setTimeout(() => {
+                if (root.querySelector("td") && !root.textContent.includes("Aucun")) return;
+                const inbox = typeof getInboxReports === "function" ? getInboxReports() : [];
+                if (inbox.length) {
+                    const rows = sortListByLabel(inbox, (r) => r.school).map(r => `<tr><td><strong>${r.reference}</strong><span>${r.school}</span></td><td>${r.date}</td><td>${r.global_score}%</td><td><mark class="${badgeClass(r.status)}">${r.status}</mark></td><td>${reportActionsHtml(r)}</td></tr>`).join("");
+                    root.innerHTML = `<table class="data-table"><thead><tr><th>Rapport</th><th>École</th><th>Date</th><th>Score</th><th>Statut</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`;
+                    return;
+                }
+                const demo = [
+                    { id: 1, reference: "RIP-2026-001", school: "Ecole Primaire A", date: "2026-07-15", global_score: 85, status: "Signe" },
+                    { id: 2, reference: "RIP-2026-002", school: "Ecole Primaire B", date: "2026-07-10", global_score: 62, status: "En validation" }
+                ];
+                const rows = sortListByLabel(demo, (r) => r.school).map(r => `<tr><td><strong>${r.reference}</strong><span>${r.school}</span></td><td>${r.date}</td><td>${r.global_score}%</td><td><mark class="${badgeClass(r.status)}">${r.status}</mark></td><td>${reportActionsHtml(r)}</td></tr>`).join("");
+                root.innerHTML = `<table class="data-table"><thead><tr><th>Rapport</th><th>École</th><th>Date</th><th>Score</th><th>Statut</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`;
+            }, 500);
+        })();
+    </script>
+</body>
+</html>

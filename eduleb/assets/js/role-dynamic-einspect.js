@@ -8,6 +8,17 @@ function safeText(value, fallback = "-") {
 	return value === undefined || value === null || value === "" ? fallback : value;
 }
 
+function sortListByLabel(items, labelFn) {
+	const getLabel = (item) => {
+		if (!item) return "";
+		const value = labelFn
+			? labelFn(item)
+			: (item.name || item.user?.name || item.school?.name || item.mission?.school?.name || item.inspection?.mission?.school?.name || item.description || "");
+		return String(value || "").toLowerCase();
+	};
+	return [...(items || [])].sort((a, b) => getLabel(a).localeCompare(getLabel(b), "fr"));
+}
+
 function badgeClass(status) {
 	const value = String(status).toLowerCase();
 	if (value.includes("realisee") || value.includes("signe") || value.includes("actif") || value.includes("success")) return "badge success";
@@ -33,20 +44,20 @@ function tableHtml(headers, rows) {
 	`;
 }
 
-function renderRows(items, mapper, emptyText = "Aucune donnee disponible.") {
+function renderRows(items, mapper, emptyText = "Aucune donnee disponible.", emptyColspan = 5) {
 	if (!items.length) {
-		return [`<tr><td colspan="5">${emptyText}</td></tr>`];
+		return [`<tr><td colspan="${emptyColspan}">${emptyText}</td></tr>`];
 	}
 	return items.map(mapper);
 }
 
-async function fetchList(resource) {
+async function fetchList(resource, params = {}) {
 	if (!window.EducInspectApi?.token) return [];
 	try {
 		if (resource === "users") {
 			return normalizeList(await window.EducInspectApi.adminUsers());
 		}
-		return normalizeList(await window.EducInspectApi.list(resource));
+		return normalizeList(await window.EducInspectApi.list(resource, params));
 	} catch (error) {
 		console.warn(`Impossible de charger ${resource}`, error);
 		return [];
@@ -60,9 +71,9 @@ async function buildAdminSections() {
 function roleLabel(role) {
 	const labels = {
 		admin: "Admin",
-		directeur_departemental: "Direction",
+		directeur_departemental: "Directeur départemental",
 		inspecteur: "Inspecteur",
-		directeur_ecole: "Ecole",
+		directeur_ecole: "Directeur d'école",
 		enseignant: "Enseignant"
 	};
 	return labels[role] || role || "-";
@@ -73,7 +84,7 @@ async function loadAdminUsers() {
 	if (!body || !window.EducInspectApi?.token) return;
 
 	try {
-		const users = normalizeList(await window.EducInspectApi.adminUsers());
+		const users = sortListByLabel(normalizeList(await window.EducInspectApi.adminUsers()), (user) => user.name);
 		body.innerHTML = renderRows(users, (user) => {
 			const role = user.roles?.[0]?.name || "";
 			return `
@@ -151,20 +162,132 @@ function setupAdminUserForm() {
 	});
 }
 
+function formatDate(value) {
+	if (!value) return "-";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return safeText(value);
+	return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function buildReportHref(reportPath) {
+	if (!reportPath) return "";
+	if (/^https?:\/\//i.test(reportPath)) return reportPath;
+	return "";
+}
+
+function registerReportCatalog(inspections) {
+	window.InspectorReportPage = window.InspectorReportPage || { allReports: [], updateSummary: null, addReport() {} };
+	window.InspectorReportPage.allReports = Array.isArray(inspections) ? inspections : [];
+}
+
+function findCatalogReport(reportKey) {
+	const reports = window.InspectorReportPage?.allReports || [];
+	return reports.find((item) => String(item.id) === String(reportKey) || String(item.reference) === String(reportKey) || String(item.ref) === String(reportKey));
+}
+
+function reportActionButtons(item, viewLabel = "Voir") {
+	const reportKey = item.id || item.reference || item.ref || "";
+	return `<div class="action-stack"><button class="mini-btn" type="button" data-view-report="${reportKey}">${viewLabel}</button><button class="mini-btn" type="button" data-download-report="${reportKey}">Télécharger</button></div>`;
+}
+
+function setupReportActionHandlers() {
+	if (window.__educInspectReportActionsBound) return;
+	window.__educInspectReportActionsBound = true;
+
+	document.addEventListener("click", (event) => {
+		const viewButton = event.target.closest("[data-view-report]");
+		const downloadButton = event.target.closest("[data-download-report]");
+		if (!viewButton && !downloadButton) return;
+
+		event.preventDefault();
+		const button = viewButton || downloadButton;
+		const report = findCatalogReport(button.dataset.viewReport || button.dataset.downloadReport);
+		if (!report) {
+			window.alert("Rapport introuvable.");
+			return;
+		}
+
+		if (viewButton && typeof window.openReportPdf === "function") {
+			window.openReportPdf(report);
+			return;
+		}
+
+		if (downloadButton && typeof window.exportReportAsPdf === "function") {
+			window.exportReportAsPdf(report);
+			return;
+		}
+
+		window.alert("Les actions PDF ne sont pas disponibles sur cette page.");
+	});
+}
+
+function renderDirectionRecommendations(recommendations) {
+	const rows = renderRows(sortListByLabel(recommendations, (item) => item.inspection?.mission?.school?.name || item.description), (item) => {
+		const schoolName = safeText(item.inspection?.mission?.school?.name, "École non renseignée");
+		const inspectorName = safeText(item.inspection?.mission?.inspector?.user?.name, "Inspecteur");
+		const priority = safeText(item.priority, "medium");
+		return `
+			<tr>
+				<td><strong>${safeText(item.description)}</strong></td>
+				<td>${schoolName}</td>
+				<td>${inspectorName}</td>
+				<td><mark class="badge ${priority === 'high' ? 'warning' : priority === 'low' ? 'success' : 'info'}">${priority}</mark></td>
+				<td>${formatDate(item.due_date)}</td>
+				<td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td>
+			</tr>`;
+	}, "Aucune recommandation disponible pour le moment.");
+	return tableHtml(["Recommandation", "École", "Inspecteur", "Priorité", "Échéance", "Statut"], rows);
+}
+
+function renderDirectionReports(inspections) {
+	registerReportCatalog(inspections);
+	const rows = renderRows(sortListByLabel(inspections, (item) => item.mission?.school?.name || item.report_path), (item) => {
+		return `
+			<tr>
+				<td><strong>${safeText(item.report_path || `Rapport-${item.id}`)}</strong></td>
+				<td>${safeText(item.mission?.school?.name)}</td>
+				<td>${formatDate(item.inspection_date)}</td>
+				<td>${safeText(item.global_score)}%</td>
+				<td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td>
+				<td>${reportActionButtons(item, "Consulter")}</td>
+			</tr>`;
+	}, "Aucun rapport disponible pour le moment.");
+	return tableHtml(["Rapport", "École", "Date", "Score", "Statut", "Action"], rows);
+}
+
 async function buildDirectionSections() {
 	const [missions, recommendations] = await Promise.all([
 		fetchList("missions"),
 		fetchList("recommendations")
 	]);
 	return [
-		sectionHtml("calendrier-direction", "Calendrier de suivi", tableHtml(["Ecole", "Date", "Inspecteur", "Statut"], renderRows(missions, (item) =>
+		sectionHtml("calendrier-direction", "Calendrier de suivi", tableHtml(["Ecole", "Date", "Inspecteur", "Statut"], renderRows(sortListByLabel(missions, (item) => item.school?.name), (item) =>
 			`<tr><td><strong>${safeText(item.school?.name)}</strong><span>${safeText(item.school?.commune?.name)}</span></td><td>${safeText(item.planned_date)}</td><td>${safeText(item.inspector?.user?.name)}</td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		))),
 		sectionHtml("statistiques", "Statistiques direction", `<p>Les indicateurs de couverture, de qualite et de suivi sont charges depuis le backend sur les cartes du tableau de bord.</p>`),
-		sectionHtml("recommandations", "Recommandations a superviser", tableHtml(["Action", "Ecole", "Priorite", "Statut"], renderRows(recommendations, (item) =>
+		sectionHtml("recommandations", "Recommandations a superviser", tableHtml(["Action", "Ecole", "Priorite", "Statut"], renderRows(sortListByLabel(recommendations, (item) => item.inspection?.mission?.school?.name || item.description), (item) =>
 			`<tr><td><strong>${safeText(item.description)}</strong></td><td>${safeText(item.inspection?.mission?.school?.name)}</td><td><mark class="badge ${item.priority === 'high' ? 'warning' : item.priority === 'low' ? 'success' : 'info'}">${safeText(item.priority)}</mark></td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		)))
 	];
+}
+
+async function setupDirectionDataViews() {
+	const recommendationsRoot = document.querySelector("[data-direction-recommendations]");
+	const reportsRoot = document.querySelector("[data-direction-reports]");
+	if (!recommendationsRoot && !reportsRoot) return;
+
+	try {
+		const [recommendations, inspections] = await Promise.all([
+			fetchList("recommendations"),
+			fetchList("inspections")
+		]);
+		registerReportCatalog(inspections);
+		if (recommendationsRoot) recommendationsRoot.innerHTML = renderDirectionRecommendations(recommendations);
+		if (reportsRoot) reportsRoot.innerHTML = renderDirectionReports(inspections);
+	} catch (error) {
+		if (recommendationsRoot) recommendationsRoot.innerHTML = '<p class="muted">Impossible de charger les recommandations.</p>';
+		if (reportsRoot) reportsRoot.innerHTML = '<p class="muted">Impossible de charger les rapports.</p>';
+	}
 }
 
 async function buildInspectorSections() {
@@ -173,26 +296,32 @@ async function buildInspectorSections() {
 		fetchList("inspections")
 	]);
 	return [
-		sectionHtml("calendrier-inspecteur", "Mon calendrier", tableHtml(["Ecole", "Date", "Commune", "Statut"], renderRows(missions, (item) =>
+		sectionHtml("calendrier-inspecteur", "Mes missions", tableHtml(["Ecole", "Date", "Commune", "Statut"], renderRows(sortListByLabel(missions, (item) => item.school?.name), (item) =>
 			`<tr><td><strong>${safeText(item.school?.name)}</strong></td><td>${safeText(item.planned_date)}</td><td>${safeText(item.school?.commune?.name)}</td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		))),
-		sectionHtml("fiches-inspecteur", "Fiches d'inspection", `<p>Zone de remplissage des fiches numeriques de l'inspecteur. Les notes et observations seront sauvegardees par l'API inspections/evaluations.</p>`),
-		sectionHtml("rapports-inspecteur", "Rapports produits", tableHtml(["Rapport", "Ecole", "Score", "Etat"], renderRows(inspections, (item) =>
+		sectionHtml("rapports-inspecteur", "Rapports produits", tableHtml(["Rapport", "Ecole", "Score", "Etat"], renderRows(sortListByLabel(inspections, (item) => item.mission?.school?.name || item.report_path), (item) =>
 			`<tr><td><strong>${safeText(item.report_path || `RIP-${item.id}`)}</strong></td><td>${safeText(item.mission?.school?.name)}</td><td>${safeText(item.global_score)}%</td><td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td></tr>`
 		)))
 	];
 }
 
 async function buildSchoolSections() {
-	const [recommendations, inspections] = await Promise.all([
+	const [recommendations, inspections, missions] = await Promise.all([
 		fetchList("recommendations"),
-		fetchList("inspections")
+		fetchList("inspections"),
+		fetchList("missions")
 	]);
+	const sortedMissions = sortListByLabel(missions, (item) => item.school?.name);
+	const sortedRecommendations = sortListByLabel(recommendations, (item) => item.inspection?.mission?.school?.name || item.description);
+	const sortedInspections = sortListByLabel(inspections, (item) => item.mission?.school?.name || item.summary);
 	return [
-		sectionHtml("plan-daction", "Plan d'action", tableHtml(["Action", "Responsable", "Echeance", "Statut"], renderRows(recommendations, (item) =>
+		sectionHtml("missions-ecole", "Missions assignées", tableHtml(["Mission", "Inspecteur", "Date", "Statut"], renderRows(sortedMissions, (item) =>
+			`<tr><td><strong>${safeText(item.objective || "Mission d'inspection")}</strong><span>${safeText(item.school?.name)}</span></td><td>${safeText(item.inspector?.user?.name)}</td><td>${safeText(item.planned_date)}</td><td><mark class="${badgeClass(item.status || "planned")}">${safeText(item.status || "planned")}</mark></td></tr>`
+		))),
+		sectionHtml("plan-daction", "Plan d'action", tableHtml(["Action", "Responsable", "Echeance", "Statut"], renderRows(sortedRecommendations, (item) =>
 			`<tr><td><strong>${safeText(item.description)}</strong></td><td>Direction d'ecole</td><td>${safeText(item.due_date)}</td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
 		))),
-		sectionHtml("observations", "Observations recues", tableHtml(["Observation", "Source", "Statut"], renderRows(inspections, (item) =>
+		sectionHtml("observations", "Observations recues", tableHtml(["Observation", "Source", "Statut"], renderRows(sortedInspections, (item) =>
 			`<tr><td><strong>${safeText(item.summary || "Observation de l'inspection")}</strong></td><td>${safeText(item.mission?.school?.name)}</td><td><mark class="${badgeClass(item.status || "Signe")}">${safeText(item.status || "Signe")}</mark></td></tr>`
 		)))
 	];
@@ -201,11 +330,280 @@ async function buildSchoolSections() {
 async function buildTeacherSections() {
 	const recommendations = await fetchList("recommendations");
 	return [
-		sectionHtml("observations", "Observations pedagogiques", tableHtml(["Observation", "Classe", "Statut"], renderRows(recommendations, (item) =>
+		sectionHtml("observations", "Observations pédagogiques", tableHtml(["Observation", "Classe", "Statut"], renderRows(sortListByLabel(recommendations, (item) => item.description), (item) =>
 			`<tr><td><strong>${safeText(item.description)}</strong></td><td>CP1</td><td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td></tr>`
-		))),
-		sectionHtml("actions-pedagogiques", "Actions pedagogiques", `<p>Ces actions concernent uniquement l'enseignant connecte et son suivi de classe.</p>`)
+		)))
 	];
+}
+
+function renderSectionPane(root, headers, rowsHtml) {
+	if (!root) return;
+	root.innerHTML = tableHtml(headers, rowsHtml);
+}
+
+function createSectionSearch(input, items, renderFn) {
+	if (!input) return;
+	input.addEventListener("input", () => {
+		const query = (input.value || "").toLowerCase().trim();
+		if (!query) {
+			renderFn(sortListByLabel(items));
+			return;
+		}
+		const filtered = sortListByLabel(items.filter((item) => JSON.stringify(item).toLowerCase().includes(query)));
+		renderFn(filtered);
+	});
+}
+
+async function renderSchoolReportsPage(root) {
+	const inspections = sortListByLabel(await fetchList("inspections"), (item) => item.mission?.school?.name || item.report_path);
+	registerReportCatalog(inspections);
+	const filtered = inspections;
+	const render = (list) => {
+		const rows = renderRows(list, (item) => {
+			return `
+				<tr>
+					<td><strong>${safeText(item.report_path || `Rapport-${item.id}`)}</strong><span>${safeText(item.mission?.school?.name)}</span></td>
+					<td>${formatDate(item.inspection_date)}</td>
+					<td>${safeText(item.global_score)}%</td>
+					<td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td>
+					<td>${reportActionButtons(item)}</td>
+				</tr>`;
+		});
+		renderSectionPane(root, ["Rapport", "École", "Date", "Score", "Statut", "Action"], rows);
+	};
+	render(filtered);
+	createSectionSearch(document.querySelector("[data-section-search]"), filtered, render);
+}
+
+async function renderSchoolActionPlanPage(root) {
+	const recommendations = sortListByLabel(await fetchList("recommendations"), (item) => item.description);
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.description)}</strong></td>
+				<td>${safeText(item.inspection?.mission?.school?.name)}</td>
+				<td>${formatDate(item.due_date)}</td>
+				<td><mark class="badge ${item.priority === 'high' ? 'warning' : item.priority === 'low' ? 'success' : 'info'}">${safeText(item.priority)}</mark></td>
+				<td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Action", "École", "Échéance", "Priorité", "Statut"], rows);
+	};
+	render(recommendations);
+	createSectionSearch(document.querySelector("[data-section-search]"), recommendations, render);
+}
+
+async function renderSchoolObservationsPage(root) {
+	const inspections = sortListByLabel(await fetchList("inspections"), (item) => item.mission?.school?.name || item.summary);
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.summary || 'Observation enregistrée')}</strong></td>
+				<td>${safeText(item.mission?.school?.name)}</td>
+				<td>${formatDate(item.inspection_date)}</td>
+				<td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Observation", "École", "Date", "Statut"], rows);
+	};
+	render(inspections);
+	createSectionSearch(document.querySelector("[data-section-search]"), inspections, render);
+}
+
+async function renderSchoolRecommendationsPage(root) {
+	const recommendations = sortListByLabel(await fetchList("recommendations"), (item) => item.description);
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.description)}</strong></td>
+				<td>${safeText(item.inspection?.mission?.school?.name)}</td>
+				<td>${formatDate(item.due_date)}</td>
+				<td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Recommandation", "École", "Échéance", "Statut"], rows);
+	};
+	render(recommendations);
+	createSectionSearch(document.querySelector("[data-section-search]"), recommendations, render);
+}
+
+async function renderSchoolCalendarPage(root) {
+	const [missions, inspections] = await Promise.all([fetchList("missions"), fetchList("inspections")]);
+	const events = [...missions.map((item) => ({
+		date: item.planned_date,
+		school: item.school?.name,
+		type: "Mission",
+		status: item.status
+	})), ...inspections.map((item) => ({
+		date: item.inspection_date,
+		school: item.mission?.school?.name,
+		type: "Inspection",
+		status: item.status || 'Signe'
+	}))].sort((a, b) => new Date(a.date) - new Date(b.date));
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td>${formatDate(item.date)}</td>
+				<td>${safeText(item.school)}</td>
+				<td>${safeText(item.type)}</td>
+				<td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Date", "École", "Type", "Statut"], rows);
+	};
+	render(events);
+	createSectionSearch(document.querySelector("[data-section-search]"), events, render);
+}
+
+async function renderSchoolTeachersPage(root) {
+	const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : JSON.parse(localStorage.getItem('educinspect_user') || '{}');
+	let teachers = [];
+	try {
+		let schoolId = null;
+		if (user?.id) {
+			let schools = await fetchList('schools', { user_id: user.id });
+			let list = Array.isArray(schools) ? schools : normalizeList(schools);
+			// fallback to fetch all and filter locally if server filter not supported
+			if ((!list || !list.length) && window.EducInspectApi?.list) {
+				try {
+					const all = normalizeList(await window.EducInspectApi.list('schools'));
+					list = all.filter((s) => (s.user_id && String(s.user_id) === String(user.id)) || (s.user && s.user.id && String(s.user.id) === String(user.id)));
+				} catch (e) {
+					console.warn('Fallback fetching all schools failed', e);
+				}
+			}
+			if (list && list.length) schoolId = list[0].id;
+		}
+		if (schoolId) {
+			teachers = await fetchList('teachers', { school_id: schoolId });
+		} else {
+			// No school linked to current user: show empty list (do not expose all teachers)
+			teachers = [];
+		}
+	} catch (e) {
+		console.warn('Erreur lors du chargement des enseignants pour cette école', e);
+		teachers = await fetchList('teachers');
+	}
+
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.name)}</strong><span>Classe ${safeText(item.grade)}</span></td>
+				<td>${safeText(item.school?.name)}</td>
+				<td>${safeText(item.email)}</td>
+				<td>${safeText(item.phone)}</td>
+				<td>
+					<a class="mini-btn" href="ajouter-enseignant.html?id=${item.id}">Modifier</a>
+					<button class="mini-btn" type="button" data-teacher-delete="${item.id}">Supprimer</button>
+				</td>
+			</tr>`,
+			"Aucun enseignant trouvé.",
+			5);
+		renderSectionPane(root, ["Enseignant", "École", "Email", "Téléphone", "Action"], rows);
+	};
+	render(sortListByLabel(teachers, (item) => item.name));
+	createSectionSearch(document.querySelector("[data-section-search]"), teachers, render);
+
+	document.addEventListener('click', async (event) => {
+		const deleteButton = event.target.closest('[data-teacher-delete]');
+		if (!deleteButton) return;
+		const teacherId = deleteButton.dataset.teacherDelete;
+		const confirmed = window.confirm('Voulez-vous supprimer cet enseignant ?');
+		if (!confirmed) return;
+		try {
+			await window.EducInspectApi.deleteResource('teachers', teacherId);
+			render(sortListByLabel(await fetchList('teachers'), (item) => item.name));
+		} catch (error) {
+			window.alert(error.message || 'Impossible de supprimer l\'enseignant.');
+		}
+	});
+}
+
+async function renderValidateTeachersPage(root) {
+	const teachers = sortListByLabel(await fetchList("teachers"), (item) => item.name);
+	const render = (list) => {
+		const rows = renderRows(list, (item) => {
+			const status = item.email ? 'Validé' : 'À valider';
+			return `
+				<tr>
+					<td><strong>${safeText(item.name)}</strong></td>
+					<td>${safeText(item.school?.name)}</td>
+					<td>${safeText(item.subject)}</td>
+					<td>${safeText(item.email)}</td>
+					<td><mark class="badge ${item.email ? 'success' : 'warning'}">${status}</mark></td>
+				</tr>`;
+		});
+		renderSectionPane(root, ["Enseignant", "École", "Matière", "Email", "Statut"], rows);
+	};
+	render(teachers);
+	createSectionSearch(document.querySelector("[data-section-search]"), teachers, render);
+}
+
+async function renderTeacherReportsPage(root) {
+	const inspections = sortListByLabel(await fetchList("inspections"), (item) => item.mission?.school?.name || item.report_path);
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.report_path || `Rapport-${item.id}`)}</strong></td>
+				<td>${safeText(item.mission?.school?.name)}</td>
+				<td>${formatDate(item.inspection_date)}</td>
+				<td>${safeText(item.global_score)}%</td>
+				<td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Rapport", "École", "Date", "Score", "Statut"], rows);
+	};
+	render(inspections);
+	createSectionSearch(document.querySelector("[data-section-search]"), inspections, render);
+}
+
+async function renderTeacherObservationsPage(root) {
+	const inspections = sortListByLabel(await fetchList("inspections"), (item) => item.mission?.school?.name || item.summary);
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.summary || 'Observation enregistrée')}</strong></td>
+				<td>${safeText(item.mission?.school?.name)}</td>
+				<td>${formatDate(item.inspection_date)}</td>
+				<td><mark class="${badgeClass(item.status || 'Signe')}">${safeText(item.status || 'Signe')}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Observation", "École", "Date", "Statut"], rows);
+	};
+	render(inspections);
+	createSectionSearch(document.querySelector("[data-section-search]"), inspections, render);
+}
+
+async function renderTeacherActionsPage(root) {
+	const recommendations = sortListByLabel(await fetchList("recommendations"), (item) => item.description);
+	const render = (list) => {
+		const rows = renderRows(list, (item) => `
+			<tr>
+				<td><strong>${safeText(item.description)}</strong></td>
+				<td>${safeText(item.inspection?.mission?.school?.name)}</td>
+				<td>${formatDate(item.due_date)}</td>
+				<td><mark class="${badgeClass(item.status)}">${safeText(item.status)}</mark></td>
+			</tr>`);
+		renderSectionPane(root, ["Action", "École", "Échéance", "Statut"], rows);
+	};
+	render(recommendations);
+	createSectionSearch(document.querySelector("[data-section-search]"), recommendations, render);
+}
+
+async function setupSectionPages() {
+	const page = window.location.pathname.split("/").pop();
+	const root = document.querySelector("[data-section-content]");
+	if (!root) return;
+	const renderers = {
+		"ecole-rapports.html": renderSchoolReportsPage,
+		"ecole-plan-daction.html": renderSchoolActionPlanPage,
+		"ecole-observations.html": renderSchoolObservationsPage,
+		"ecole-recommandations.html": renderSchoolRecommendationsPage,
+		"ecole-calendrier.html": renderSchoolCalendarPage,
+		"ecole-enseignants.html": renderSchoolTeachersPage,
+		"valider-enseignants.html": renderValidateTeachersPage,
+		"enseignant-rapport.html": renderTeacherReportsPage,
+		"enseignant-observation.html": renderTeacherObservationsPage,
+		"enseignant-Actions-pedagogiques.html": renderTeacherActionsPage
+	};
+	const renderer = renderers[page];
+	if (renderer) {
+		await renderer(root);
+	}
 }
 
 function fixMenuLinks(role) {
@@ -219,36 +617,68 @@ function fixMenuLinks(role) {
 			"Ecoles": "admin-ecoles.html",
 			"Inspecteurs": "admin-inspecteurs.html",
 			"Parametres": "admin-parametres.html",
+			"Paramètres": "admin-parametres.html",
 			"Deconnexion": "deconnexion.html"
 		},
 		directeur_departemental: {
-			"Calendrier": "calendrier-direction",
-			"Rapports a valider": "rapports-direction",
-			"Statistiques": "statistiques",
-			"Recommandations": "recommandations"
+			"Calendrier": "calendrier-direction.html",
+			"Rapports": "consultation-rapports.html",
+			"Statistiques": "statistiques-direction.html",
+			"Recommandations": "recommandations-direction.html",
+			"Parametres": "profile.html",
+			"Paramètres": "profile.html",
+			"Deconnexion": "deconnexion.html"
 		},
 		inspecteur: {
-			"Missions": "missions-inspecteur",
-			"Calendrier": "calendrier-inspecteur",
-			"Fiches": "fiches-inspecteur",
-			"Rapports": "rapports-inspecteur"
+			"Missions": "missions-inspecteur.html",
+			"Calendrier": "calendrier-inspecteur.html",
+			"Fiches": "fiches-inspecteur.html",
+			"Rapports": "rapports-inspecteur.html",
+			"Parametres": "profile.html",
+			"Paramètres": "profile.html",
+			"Deconnexion": "deconnexion.html"
 		},
 		directeur_ecole: {
-			"Rapports": "rapports-ecole",
-			"Plan d'action": "plan-daction",
-			"Observations": "observations"
+			"Rapports": "ecole-rapports.html",
+			"Plan d'action": "ecole-plan-daction.html",
+			"Observations": "ecole-observations.html",
+			"Créer un enseignant": "ajouter-enseignant.html",
+			"Recommandations": "ecole-recommandations.html",
+			"Calendrier": "ecole-calendrier.html",
+			"Équipe": "ecole-enseignants.html",
+			"Parametres": "profile.html",
+			"Paramètres": "profile.html",
+			"Deconnexion": "deconnexion.html"
 		},
 		enseignant: {
-			"Rapports": "rapports-enseignant",
-			"Observations": "observations",
-			"Actions pedagogiques": "actions-pedagogiques"
+			"Rapports": "enseignant-rapport.html",
+			"Observations": "enseignant-observation.html",
+			"Actions pedagogiques": "enseignant-Actions-pedagogiques.html",
+			"Parametres": "profile.html",
+			"Paramètres": "profile.html",
+			"Deconnexion": "deconnexion.html"
 		}
 	};
 
 	const links = map[role] || {};
-	document.querySelectorAll(".side-nav a").forEach((link) => {
+	document.querySelectorAll('.side-nav a').forEach((link) => {
 		const text = link.textContent.trim();
-		if (links[text]) link.href = links[text];
+		if (links[text]) {
+			link.href = links[text];
+		}
+	});
+}
+
+function setActiveMenuItem() {
+	const currentPage = window.location.pathname.split("/").pop();
+	document.querySelectorAll(".side-nav a").forEach((link) => {
+		const href = link.getAttribute("href");
+		if (!href) return;
+		if (href === currentPage) {
+			link.classList.add("active");
+		} else {
+			link.classList.remove("active");
+		}
 	});
 }
 
@@ -267,13 +697,13 @@ function resourceTitle(resource) {
 
 function resourceTableHeaders(resource) {
 	const headers = {
-		users: ["Nom", "Email", "Role", "Statut", "Action"],
-		departments: ["Departement", "Code", "Chef-lieu", "Action"],
-		communes: ["Commune", "Code", "Departement", "Action"],
-		schools: ["Ecole", "Commune", "Directeur", "Effectif", "Action"],
-		inspectors: ["Inspecteur", "Matricule", "Specialite", "Telephone", "Action"]
+		users: ["#", "Nom", "Email", "Role", "Action"],
+		departments: ["#", "Departement", "Code", "Chef-lieu", "Action"],
+		communes: ["#", "Commune", "Code", "Departement", "Action"],
+		schools: ["#", "Ecole", "Commune", "Directeur / Compte", "Effectif", "Action"],
+		inspectors: ["#", "Inspecteur", "Matricule", "Specialite", "Telephone", "Action"]
 	};
-	return headers[resource] || ["Nom", "Action"];
+	return headers[resource] || ["#", "Nom", "Action"];
 }
 
 function resourceActionLabel(resource) {
@@ -340,6 +770,7 @@ function getResourceFields(resource) {
 			{ name: "name", label: "Nom de l'ecole", type: "text", required: true },
 			{ name: "code", label: "Code", type: "text", required: true },
 			{ name: "director_name", label: "Directeur", type: "text", required: false },
+			{ name: "user_id", label: "Compte utilisateur", type: "select", required: false },
 			{ name: "phone", label: "Telephone", type: "text", required: false },
 			{ name: "email", label: "Email", type: "email", required: false },
 			{ name: "student_count", label: "Effectif", type: "number", required: false }
@@ -355,74 +786,93 @@ function getResourceFields(resource) {
 }
 
 function resourceFormHtml(resource) {
-	const fields = getResourceFields(resource);
-	const fieldHtml = fields.map((field) => {
-		const required = field.required ? "required" : "";
-		if (field.type === "select") {
-			const options = field.options ? field.options.map((option) => `<option value="${option.value}">${option.text}</option>`).join("") : `<option value="">Chargement...</option>`;
-			return `<label>${field.label}<select name="${field.name}" ${required}>${options}</select></label>`;
-		}
-		return `<label>${field.label}<input name="${field.name}" type="${field.type}" ${required}></label>`;
-	}).join("");
+	const createUrls = {
+		users: "ajouter-utilisateur.html",
+		departments: "ajouter-departement.html",
+		communes: "ajouter-commune.html",
+		schools: "ajouter-ecole.html",
+		inspectors: "ajouter-inspecteur.html"
+	};
+
+	const createLabels = {
+		users: "utilisateur",
+		departments: "département",
+		communes: "commune",
+		schools: "école",
+		inspectors: "inspecteur"
+	};
+
+	const createArticles = {
+		users: "un",
+		departments: "un",
+		communes: "une",
+		schools: "une",
+		inspectors: "un"
+	};
+
+	const href = createUrls[resource] || "#";
+	const label = createLabels[resource] || resourceTitle(resource);
+	const article = createArticles[resource] || "un";
+
 	return `
-		<form class="app-form admin-resource-form" data-admin-resource-form="${resource}">
-			<input type="hidden" name="id">
-			${fieldHtml}
-			<div class="form-actions">
-				<button class="primary-action" type="submit">Enregistrer</button>
-				<button class="secondary-action" type="button" data-reset-resource-form>Annuler</button>
-			</div>
-			<p class="form-message" data-admin-resource-message></p>
-		</form>
+		<div class="resource-header">
+			<p>Utilisez le bouton ci-dessous pour accéder au formulaire de création de ${label}.</p>
+			<a class="mini-btn" href="${href}">Ajouter ${article} ${label}</a>
+		</div>
 	`;
 }
 
 function renderResourceTable(resource, items) {
 	const rows = {
-		users: items.map((user) => {
+		users: items.map((user, index) => {
 			const role = user.roles?.[0]?.name || "";
 			const isActive = Boolean(user.email_verified_at);
 			const statusLabel = isActive ? "Actif" : "Inactif";
 			const statusClass = isActive ? "success" : "warning";
 			return `<tr>
+				<td>${index + 1}</td>
 				<td><strong>${safeText(user.name)}</strong><span>${safeText(user.email)}</span></td>
 				<td>${safeText(user.email)}</td>
 				<td><mark class="badge info">${roleLabel(role)}</mark></td>
 				<td><mark class="badge ${statusClass}">${statusLabel}</mark></td>
 				<td>
-					<button class="mini-btn" type="button" data-edit-resource="${resource}" data-id="${user.id}" data-name="${safeText(user.name)}" data-email="${safeText(user.email)}" data-role="${role}">Modifier</button>
+					<a class="mini-btn" href="ajouter-utilisateur.html?id=${user.id}">Modifier</a>
 					<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${user.id}">Supprimer</button>
 				</td>
 			</tr>`;
 		}),
-		departments: items.map((item) => `<tr>
+		departments: items.map((item, index) => `<tr>
+			<td>${index + 1}</td>
 			<td><strong>${safeText(item.name)}</strong></td>
 			<td>${safeText(item.code)}</td>
 			<td>${safeText(item.capital)}</td>
-			<td><button class="mini-btn" type="button" data-edit-resource="${resource}" data-id="${item.id}" data-name="${safeText(item.name)}" data-code="${safeText(item.code)}" data-capital="${safeText(item.capital)}">Modifier</button>
+			<td><a class="mini-btn" href="ajouter-departement.html?id=${item.id}">Modifier</a>
 			<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${item.id}">Supprimer</button></td>
 		</tr>`),
-		communes: items.map((item) => `<tr>
+		communes: items.map((item, index) => `<tr>
+			<td>${index + 1}</td>
 			<td><strong>${safeText(item.name)}</strong></td>
 			<td>${safeText(item.code)}</td>
 			<td>${safeText(item.department?.name)}</td>
-			<td><button class="mini-btn" type="button" data-edit-resource="${resource}" data-id="${item.id}" data-department-id="${item.department_id}" data-name="${safeText(item.name)}" data-code="${safeText(item.code)}">Modifier</button>
+			<td><a class="mini-btn" href="ajouter-commune.html?id=${item.id}">Modifier</a>
 			<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${item.id}">Supprimer</button></td>
 		</tr>`),
-		schools: items.map((item) => `<tr>
+		schools: items.map((item, index) => `<tr>
+			<td>${index + 1}</td>
 			<td><strong>${safeText(item.name)}</strong><span>${safeText(item.code)}</span></td>
 			<td>${safeText(item.commune?.name)}</td>
-			<td>${safeText(item.director_name)}</td>
+			<td>${safeText(item.director_name)}${item.user || item.user_id ? `<span class="sub">${item.user ? safeText(item.user.name) : `Compte #${safeText(item.user_id)}`}${item.user?.email ? ` (${safeText(item.user.email)})` : ""}</span>` : ""}</td>
 			<td>${safeText(item.student_count)}</td>
-			<td><button class="mini-btn" type="button" data-edit-resource="${resource}" data-id="${item.id}" data-commune-id="${item.commune_id}" data-name="${safeText(item.name)}" data-code="${safeText(item.code)}" data-director-name="${safeText(item.director_name)}" data-phone="${safeText(item.phone)}" data-email="${safeText(item.email)}" data-student-count="${safeText(item.student_count)}">Modifier</button>
+			<td><a class="mini-btn" href="ajouter-ecole.html?id=${item.id}">Modifier</a>
 			<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${item.id}">Supprimer</button></td>
 		</tr>`),
-		inspectors: items.map((item) => `<tr>
+		inspectors: items.map((item, index) => `<tr>
+			<td>${index + 1}</td>
 			<td><strong>${safeText(item.user?.name)}</strong><span>${safeText(item.user?.email)}</span></td>
 			<td>${safeText(item.registration_number)}</td>
 			<td>${safeText(item.specialty)}</td>
 			<td>${safeText(item.phone)}</td>
-			<td><button class="mini-btn" type="button" data-edit-resource="${resource}" data-id="${item.id}" data-user-id="${item.user_id}" data-registration-number="${safeText(item.registration_number)}" data-specialty="${safeText(item.specialty)}" data-phone="${safeText(item.phone)}">Modifier</button>
+			<td><a class="mini-btn" href="ajouter-inspecteur.html?id=${item.id}">Modifier</a>
 			<button class="mini-btn" type="button" data-delete-resource="${resource}" data-id="${item.id}">Supprimer</button></td>
 		</tr>`)
 	};
@@ -434,15 +884,7 @@ async function buildAdminResourcePage() {
 	if (!resource) return "";
 	const title = resourceTitle(resource);
 	const headers = resourceTableHeaders(resource);
-	if (resource === "users") {
-		return sectionHtml(resource, title, `
-			<div class="table-scroll">
-				${tableHtml(headers, [`<tr><td colspan="${headers.length}">Chargement...</td></tr>`]).replace("<tbody>", `<tbody data-admin-resource-body="${resource}">`)}
-			</div>
-		`);
-	}
 	return sectionHtml(resource, title, `
-		${resourceToolbarHtml(resource)}
 		<div class="table-scroll">
 			${tableHtml(headers, [`<tr><td colspan="${headers.length}">Chargement...</td></tr>`]).replace("<tbody>", `<tbody data-admin-resource-body="${resource}">`)}
 		</div>
@@ -459,6 +901,7 @@ async function loadAdminResourceRows(resource) {
 		} else {
 			items = normalizeList(await window.EducInspectApi.list(resource));
 		}
+		items = sortListByLabel(items);
 		body.innerHTML = renderResourceTable(resource, items).join("");
 		await loadResourceSelectOptions(resource);
 	} catch (error) {
@@ -482,6 +925,7 @@ async function loadResourceSelectOptions(resource) {
 		let data = [];
 		if (config.endpoint === "users") data = normalizeList(await window.EducInspectApi.adminUsers());
 		else data = normalizeList(await window.EducInspectApi.list(config.endpoint));
+		data = sortListByLabel(data);
 		select.innerHTML = data.map((item) => {
 			if (config.endpoint === "departments") return `<option value="${item.id}">${safeText(item.name)}</option>`;
 			if (config.endpoint === "communes") return `<option value="${item.id}">${safeText(item.name)}</option>`;
@@ -535,16 +979,22 @@ function setupAdminResourceActions(resource) {
 
 function setupAdminResourceForm(resource) {
 	const form = document.querySelector(`[data-admin-resource-form="${resource}"]`);
-	if (!form) return;
 	const message = document.querySelector(`[data-admin-resource-message]`);
-	const resetButton = form.querySelector("[data-reset-resource-form]");
+	const resetButton = form ? form.querySelector("[data-reset-resource-form]") : null;
 	const show = (text, type = "info") => { if (!message) return; message.textContent = text; message.dataset.type = type; };
-	const reset = () => { form.reset(); form.elements.id.value = ""; if (resource === "users") form.elements.password.required = true; show(""); };
+	const reset = () => {
+		if (!form) return;
+		form.reset();
+		form.elements.id.value = "";
+		if (resource === "users") form.elements.password.required = true;
+		show("");
+	};
 	resetButton?.addEventListener("click", reset);
 
 	document.addEventListener("click", async (event) => {
 		const editButton = event.target.closest("[data-edit-resource]");
 		if (editButton) {
+			if (!form) return;
 			const targetResource = editButton.dataset.editResource;
 			if (targetResource !== resource) return;
 			form.elements.id.value = editButton.dataset.id || "";
@@ -561,7 +1011,7 @@ function setupAdminResourceForm(resource) {
 
 		const deleteButton = event.target.closest("[data-delete-resource]");
 		if (deleteButton && deleteButton.dataset.deleteResource === resource) {
-			const confirmed = window.confirm("Voulez-vous supprimer cet element ?");
+			const confirmed = window.confirm("Voulez-vous supprimer cet élément ?");
 			if (!confirmed) return;
 			try {
 				if (resource === "users") {
@@ -569,7 +1019,7 @@ function setupAdminResourceForm(resource) {
 				} else {
 					await window.EducInspectApi.deleteResource(resource, deleteButton.dataset.id);
 				}
-				show("Element supprime avec succes.", "success");
+				show("Élément supprimé avec succès.", "success");
 				await loadAdminResourceRows(resource);
 			} catch (error) {
 				show(error.message || "Erreur pendant la suppression.", "error");
@@ -577,7 +1027,7 @@ function setupAdminResourceForm(resource) {
 		}
 	});
 
-	form.addEventListener("submit", async (event) => {
+	form?.addEventListener("submit", async (event) => {
 		event.preventDefault();
 		const payload = Object.fromEntries(new FormData(form).entries());
 		if (resource === "users" && !payload.password && form.elements.id.value) delete payload.password;
@@ -590,14 +1040,14 @@ function setupAdminResourceForm(resource) {
 				} else {
 					await window.EducInspectApi.updateResource(resource, form.elements.id.value, payload);
 				}
-				show("Element modifie avec succes.", "success");
+				show("Élément modifié avec succès.", "success");
 			} else {
 				if (resource === "users") {
 					await window.EducInspectApi.createAdminUser(payload);
 				} else {
 					await window.EducInspectApi.createResource(resource, payload);
 				}
-				show("Element cree avec succes.", "success");
+				show("Élément créé avec succès.", "success");
 			}
 			reset();
 			await loadAdminResourceRows(resource);
@@ -609,31 +1059,49 @@ function setupAdminResourceForm(resource) {
 
 async function setupRoleDashboard() {
 	const role = document.body.dataset.requiredRole;
+	const resource = document.body.dataset.resource;
 	const main = document.querySelector(".main");
 	if (!role || !main) return;
 
+	setupReportActionHandlers();
 	fixMenuLinks(role);
+	setActiveMenuItem();
+
+	const page = window.location.pathname.split("/").pop();
+	const dashboardPages = [
+		"admin.html",
+		"direction.html",
+		"inspecteur.html",
+		"ecole.html",
+		"enseignant.html"
+	];
 
 	let sections = [];
-	if (document.body.dataset.resource) {
-		sections = [await buildAdminResourcePage()];
-	} else if (role === "admin") {
-		sections = await buildAdminSections();
-	} else if (role === "directeur_departemental") {
-		sections = await buildDirectionSections();
-	} else if (role === "inspecteur") {
-		sections = await buildInspectorSections();
-	} else if (role === "directeur_ecole") {
-		sections = await buildSchoolSections();
-	} else if (role === "enseignant") {
-		sections = await buildTeacherSections();
+	if (resource) {
+		if (!document.querySelector(`[data-admin-resource-body="${resource}"]`)) {
+			sections = [await buildAdminResourcePage()];
+		}
+	} else if (dashboardPages.includes(page) && document.body.dataset.dynamicSections !== "false") {
+		if (role === "admin") {
+			sections = await buildAdminSections();
+		} else if (role === "directeur_departemental") {
+			sections = await buildDirectionSections();
+		} else if (role === "inspecteur") {
+			sections = await buildInspectorSections();
+		} else if (role === "directeur_ecole") {
+			sections = await buildSchoolSections();
+		} else if (role === "enseignant") {
+			sections = await buildTeacherSections();
+		}
 	}
 
 	if (sections.length) {
 		main.insertAdjacentHTML("beforeend", `<div class="role-sections">${sections.join("")}</div>`);
 	}
 
-	const resource = document.body.dataset.resource;
+	await setupDirectionDataViews();
+	await setupSectionPages();
+
 	if (resource) {
 		setupAdminResourceActions(resource);
 		setupAdminResourceForm(resource);

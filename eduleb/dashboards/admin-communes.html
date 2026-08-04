@@ -8,14 +8,14 @@
 	<link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
 	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 	<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
-	<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+	<link href="../assets/css/dashboard-einspect.css?v=20260730-admin-fix" rel="stylesheet">
 	<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 
 <body data-required-role="admin" data-resource="communes">
 	<div class="app-shell">
 		<aside class="sidebar">
-			<a class="brand" href="../index.html"><img src="../assets/img/logo.png"
+			<a class="brand" href="../index.html"><img src="../assets/img/logo1.png"
 					alt="EducInspect"><span>EducInspect</span></a>
 			<div class="profile">
 				<div class="avatar">AD</div>
@@ -45,21 +45,31 @@
 					<div class="user-menu"><span class="ti-user"></span> <span data-user-role>Admin</span></div>
 				</div>
 			</header>
-			<section class="dashboard-head">
+			<!-- <section class="dashboard-head">
 				<div>
 					<p class="eyebrow">Administration generale</p>
 					<h1>Gestion des communes</h1>
 					<p>Centralisez les communes, leurs codes et leur rattachement aux departements.</p>
-				</div>
+				</div> -->
 				<!-- <div class="period"><span class="ti-location-pin"></span> <strong data-live-status>//
 						Configuration live</strong></div> -->
-			</section>
-		</main>
+				<!-- </section> -->
+				<section class="toolbar">
+					<div class="search-box">
+						<span class="ti-search"></span>
+						<input type="search" placeholder="Rechercher une commune par nom, code ou departement...">
+					</div>
+					<a href="ajouter-commune.html" class="btn-add">
+						<span class="ti-plus"></span>
+						Ajouter une commune
+					</a>
+				</section>
+			</main>
 	</div>
-	<script src="../assets/js/api-einspect.js"></script>
-	<script src="../assets/js/role-guard-einspect.js"></script>
-	<script src="../assets/js/dashboard-einspect.js"></script>
-	<script src="../assets/js/role-dynamic-einspect.js"></script>
+	<script src="../assets/js/api-einspect.js?v=20260729-admin"></script>
+	<script src="../assets/js/role-guard-einspect.js?v=20260729-admin"></script>
+	<script src="../assets/js/dashboard-einspect.js?v=20260729-admin"></script>
+	<script src="../assets/js/role-dynamic-einspect.js?v=20260729-admin"></script>
 </body>
 
 </html>

@@ -33,7 +33,17 @@ if (loginForm) {
 			const payload = await window.EducInspectApi.login(emailInput.value, passwordInput.value);
 			window.EducInspectApi.setSession(payload);
 			showLoginMessage("Connexion reussie. Ouverture du tableau de bord...", "success");
-			window.location.href = dashboardForUser(payload.user);
+			let user = payload.user || null;
+			if (!user) {
+				try {
+					user = await window.EducInspectApi.me();
+				} catch (e) {
+					console.warn("Impossible de récupérer l'utilisateur après login:", e.message || e);
+				}
+			}
+			const target = dashboardForUser(user);
+			console.log("login payload:", payload, "resolved user:", user, "redirect:", target);
+			window.location.href = target;
 		} catch (error) {
 			showLoginMessage(error.message || "Connexion impossible. Verifiez le backend Laravel.", "error");
 		}

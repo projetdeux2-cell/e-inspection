@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fiches d'inspection - EducInspect</title>
+    <link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
+    <link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/fonts/themify-icons.css" rel="stylesheet">
+    <link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        .page-header { padding: 24px 0 16px 0; }
+        .page-header h1 { font-size: 28px; font-weight: 800; margin: 0 0 4px 0; color: #0a1e3c; }
+        .page-header p { font-size: 15px; color: #6b7a93; margin: 0; }
+        .panel { background: #fff; border-radius: 16px; border: 1px solid #eef2f7; box-shadow: 0 2px 8px rgba(10,30,60,.04); overflow: hidden; margin-bottom: 32px; }
+        .panel .panel-head { padding: 18px 24px 12px 24px; border-bottom: 1px solid #f0f3f8; display: flex; justify-content: space-between; align-items: center; }
+        .panel .panel-head h3 { font-weight: 700; font-size: 16px; color: #0a1e3c; margin: 0; }
+        .fiche-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 24px; }
+        .fiche-card {
+            background: #f8fafc; border-radius: 14px; padding: 24px; border: 1px solid #eef2f7;
+            transition: .2s; cursor: pointer;
+        }
+        .fiche-card:hover { border-color: #2a6df4; box-shadow: 0 4px 16px rgba(42,109,244,.1); transform: translateY(-2px); }
+        .fiche-card h4 { font-size: 16px; font-weight: 700; color: #0a1e3c; margin: 0 0 8px 0; }
+        .fiche-card p { font-size: 13px; color: #6b7a93; margin: 0 0 12px 0; }
+        .fiche-meta { display: flex; gap: 16px; font-size: 12px; color: #6b7a93; }
+        .fiche-meta span { display: flex; align-items: center; gap: 4px; }
+        .score-display { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+        .score-display .score-val { font-size: 32px; font-weight: 900; color: #2a6df4; }
+        .score-display small { color: #6b7a93; }
+        .toolbar {
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+            gap: 16px; margin-bottom: 28px; background: #fff; padding: 16px 24px;
+            border-radius: 16px; box-shadow: 0 2px 8px rgba(10,30,60,.06); border: 1px solid #eef2f7;
+        }
+        .toolbar .search-box { position: relative; flex: 1 1 320px; }
+        .toolbar .search-box span.ti-search { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; color: #9aaec5; pointer-events: none; }
+        .toolbar .search-box input { width: 100%; padding: 10px 16px 10px 44px; border: 1px solid #e4e9f0; border-radius: 12px; font-size: 14px; font-family: 'Mulish',sans-serif; background: #f8fafc; }
+        .toolbar .search-box input:focus { outline: none; border-color: #2a6df4; box-shadow: 0 0 0 4px rgba(42,109,244,.1); }
+        .empty-state { text-align: center; padding: 48px 24px; color: #6b7a93; grid-column: 1 / -1; }
+        .empty-state span { font-size: 48px; color: #dce3ec; display: block; margin-bottom: 16px; }
+        .empty-state h4 { font-weight: 700; color: #0a1e3c; margin-bottom: 8px; }
+        @media(max-width:768px){ .fiche-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body data-required-role="inspecteur">
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" href="../index.html"><img src="../assets/img/logo1.png" alt="EducInspect"><span>EducInspect</span></a>
+            <div class="profile">
+                <div class="avatar">IN</div>
+                <div><strong data-user-name>Inspecteur</strong><p data-user-role>Inspecteur pedagogique</p></div>
+            </div>
+            <nav class="side-nav">
+                <a href="inspecteur.html"><span class="ti-dashboard"></span>Dashboard</a>
+                <a href="missions-inspecteur.html"><span class="ti-clipboard"></span>Missions</a>
+                <a href="calendrier-inspecteur.html"><span class="ti-calendar"></span>Calendrier</a>
+                <a class="active" href="fiches-inspecteur.html"><span class="ti-file"></span>Fiches</a>
+                <a href="rapports-inspecteur.html"><span class="ti-files"></span>Rapports</a>
+                <a href="profile.html"><span class="ti-settings"></span>Paramètres</a>
+                <a href="deconnexion.html"><span class="ti-power-off"></span>Deconnexion</a>
+            </nav>
+            <p class="copyright">&copy; 2026 EducInspect</p>
+        </aside>
+        <main class="main">
+            <header class="topbar">
+                <button class="menu-btn" type="button"><span class="ti-menu"></span></button>
+                <div class="top-actions">
+                    <button class="icon-btn" type="button"><span class="ti-bell"></span><em>0</em></button>
+                    <div class="user-menu"><span class="ti-user"></span> <span data-user-role>Inspecteur</span></div>
+                </div>
+            </header>
+            <section class="page-header">
+                <div><h1>Fiches d'inspection</h1><p>Consultez et remplissez vos fiches d'evaluation pedagogique.</p></div>
+            </section>
+            <section class="toolbar">
+                <div class="search-box">
+                    <span class="ti-search"></span>
+                    <input type="text" data-search-fiches placeholder="Rechercher par ecole, reference...">
+                </div>
+            </section>
+            <section class="fiche-grid" data-fiches-grid>
+                <div class="empty-state"><span class="ti-file"></span><h4>Chargement...</h4><p>Recuperation des fiches d'inspection.</p></div>
+            </section>
+        </main>
+    </div>
+    <script src="../assets/js/api-einspect.js"></script>
+    <script src="../assets/js/role-guard-einspect.js"></script>
+    <script src="../assets/js/dashboard-einspect.js"></script>
+    <script src="../assets/js/role-dynamic-einspect.js"></script>
+    <script>
+        (async function() {
+            const grid = document.querySelector("[data-fiches-grid]");
+            const search = document.querySelector("[data-search-fiches]");
+            let allInspections = [];
+
+            function scoreColor(score) {
+                if (score >= 80) return "#10B981";
+                if (score >= 60) return "#3C82F6";
+                if (score >= 40) return "#F97316";
+                return "#EF4444";
+            }
+
+            function render(list) {
+                if (!grid) return;
+                list = sortListByLabel(list, (i) => i.mission?.school?.name || i.school?.name || i.reference);
+                if (!list.length) {
+                    grid.innerHTML = '<div class="empty-state"><span class="ti-file"></span><h4>Aucune fiche</h4><p>Aucune fiche d\'inspection disponible.</p></div>';
+                    return;
+                }
+                grid.innerHTML = list.map(i => {
+                    const score = i.global_score || i.score || 0;
+                    const school = i.mission?.school?.name || i.school?.name || "Ecole";
+                    const date = i.inspection_date || i.date || "-";
+                    const ref = i.reference || "FIP-" + (i.id || "?");
+                    return `
+                        <div class="fiche-card" onclick="location.href='creer-rapport-inspecteur.html?school=${encodeURIComponent(school)}'">
+                            <h4>${ref}</h4>
+                            <p>${school}</p>
+                            <div class="score-display">
+                                <span class="score-val" style="color:${scoreColor(score)}">${score}%</span>
+                                <small>Score global</small>
+                            </div>
+                            <div class="fiche-meta">
+                                <span><span class="ti-calendar"></span> ${date}</span>
+                                <span><span class="ti-check-box"></span> ${i.status || "En cours"}</span>
+                            </div>
+                            <div style="margin-top:12px"><button class="mini-btn" type="button" onclick="event.stopPropagation();location.href='creer-rapport-inspecteur.html?school=${encodeURIComponent(school)}'">Creer un rapport</button></div>
+                        </div>
+                    `;
+                }).join("");
+            }
+
+            const inbox = typeof getInboxReports === "function" ? getInboxReports() : [];
+            if (inbox.length) {
+                allInspections = inbox.map(r => ({
+                    reference: r.reference,
+                    global_score: r.global_score,
+                    score: r.global_score,
+                    school: { name: r.school },
+                    "school.name": r.school,
+                    date: r.date,
+                    inspection_date: r.date,
+                    status: r.status
+                }));
+                render(allInspections);
+                search?.addEventListener("input", () => {
+                    const q = search.value.toLowerCase().trim();
+                    if (!q) return render(allInspections);
+                    render(allInspections.filter(i => {
+                        const text = [i.school?.name, i.reference, i.status].join(" ").toLowerCase();
+                        return text.includes(q);
+                    }));
+                });
+                return;
+            }
+
+            try {
+                const data = await window.EducInspectApi.list("inspections");
+                allInspections = Array.isArray(data) ? data : (data?.data || []);
+            } catch(e) {
+                console.warn("API fiches indisponible, chargement demo");
+            }
+
+            if (!allInspections.length) {
+                allInspections = [
+                    { reference: "FIP-2026-001", global_score: 85, score: 85, "school.name": "Ecole Primaire A", school: { name: "Ecole Primaire A" }, inspection_date: "2026-07-15", date: "2026-07-15", status: "Signe" },
+                    { reference: "FIP-2026-002", global_score: 62, score: 62, "school.name": "Ecole Primaire B", school: { name: "Ecole Primaire B" }, inspection_date: "2026-07-10", date: "2026-07-10", status: "En validation" },
+                    { reference: "FIP-2026-003", global_score: 45, score: 45, "school.name": "Groupe Scolaire C", school: { name: "Groupe Scolaire C" }, inspection_date: "2026-07-05", date: "2026-07-05", status: "Planifiee" }
+                ];
+            }
+            render(allInspections);
+
+            search?.addEventListener("input", () => {
+                const q = search.value.toLowerCase().trim();
+                if (!q) return render(allInspections);
+                render(allInspections.filter(i => {
+                    const school = i.mission?.school?.name || i.school?.name || i["school.name"] || "";
+                    const text = [school, i.reference, i.status].join(" ").toLowerCase();
+                    return text.includes(q);
+                }));
+            });
+        })();
+    </script>
+</body>
+</html>

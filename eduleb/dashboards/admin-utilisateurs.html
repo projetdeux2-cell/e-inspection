@@ -8,7 +8,7 @@
 	<link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
 	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 	<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
-	<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+	<link href="../assets/css/dashboard-einspect.css?v=20260730-admin-fix" rel="stylesheet">
 	<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
 	<style>
@@ -421,7 +421,7 @@
 		<!-- ===== SIDEBAR ===== -->
 		<aside class="sidebar">
 			<a class="brand" href="../index.html">
-				<img src="../assets/img/logo.png" alt="EducInspect">
+				<img src="../assets/img/logo1.png" alt="EducInspect">
 				<span>EducInspect</span>
 			</a>
 			<div class="profile">
@@ -495,93 +495,38 @@ Configuration live</strong>
 				</a>
 			</section>
 
-			<!-- ===== PANEL + TABLE ===== -->
-			<!-- <section class="panel">
-                <div class="panel-head">
-                    <h3 class="panel-title">Liste des utilisateurs</h3>
-                    <span class="panel-badge" id="userBadge">0 inscrits</span>
-                </div> -->
-
-			<!-- <div class="table-responsive">
-                    <table class="data-table" id="userTable">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Utilisateur</th>
-                                <th>Rôle</th>
-                                <th>Statut</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody"> -->
-			<!-- Les données sont injectées dynamiquement par le back‑end -->
-			<!-- Exemple de ligne (à supprimer en production) : -->
-			<!--
-                            <tr>
-                                <td class="col-id">1</td>
-                                <td>
-                                    <div class="col-user">
-                                        <div class="avatar-sm">AD</div>
-                                        <div class="user-info">
-                                            <span class="name">Amara Diallo</span>
-                                            <span class="email">a.diallo@educinspect.sn</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="role-badge admin"><span class="ti-user"></span> Admin</span></td>
-                                <td><span class="status active"><span class="dot"></span> Actif</span></td>
-                                <td>
-                                    <div class="actions">
-                                        <a href="#" class="action-btn view"><span class="ti-eye"></span></a>
-                                        <a href="modifier-utilisateur.html" class="action-btn edit"><span class="ti-pencil"></span></a>
-                                        <button class="action-btn delete"><span class="ti-trash"></span></button>
-                                    </div>
-                                </td>
-                            </tr>
-                            -->
-			<!-- </tbody>
-                    </table>
-                </div> -->
-			<!-- </section> -->
+			<section class="panel">
+				<div class="panel-head">
+					<h3 class="panel-title">Liste des utilisateurs</h3>
+				</div>
+				<div class="table-scroll">
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>#</th>
+								<th>Nom</th>
+								<th>Email</th>
+								<th>Role</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody data-admin-resource-body="users">
+							<tr><td colspan="5">Chargement...</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
 
 		</main>
 	</div>
 
 	<!-- ===== SCRIPTS ===== -->
-	<script src="../assets/js/api-einspect.js"></script>
-	<script src="../assets/js/role-guard-einspect.js"></script>
-	<script src="../assets/js/dashboard-einspect.js"></script>
-	<script src="../assets/js/role-dynamic-einspect.js"></script>
+	<script src="../assets/js/api-einspect.js?v=20260729"></script>
+	<script src="../assets/js/role-guard-einspect.js?v=20260729"></script>
+	<script src="../assets/js/role-dynamic-einspect.js?v=20260729"></script>
+	<script>console.log('role-dynamic-einspect rechargé');</script>
 
-	<!--
-        Le script ci‑dessous est un exemple d’intégration avec votre back‑end.
-        Adaptez‑le à votre API.
-    -->
-	<script>
-		// Exemple d’appel API pour charger les utilisateurs
-		/*
-		document.addEventListener('DOMContentLoaded', function() {
-			fetch('/api/users')
-				.then(response => response.json())
-				.then(data => {
-					const tbody = document.getElementById('tableBody');
-					const userCount = document.getElementById('userCount');
-					const userBadge = document.getElementById('userBadge');
-
-					// Mise à jour des compteurs
-					userCount.textContent = data.length;
-					userBadge.textContent = data.length + ' inscrit' + (data.length > 1 ? 's' : '');
-
-					// Génération des lignes
-					tbody.innerHTML = data.map(user => {
-						// … construction des colonnes avec les classes appropriées
-						return `<tr>...</tr>`;
-					}).join('');
-				})
-				.catch(error => console.error('Erreur de chargement des utilisateurs :', error));
-		});
-		*/
-	</script>
-</body>
+	<!-- Le tableau des utilisateurs et les actions sont rendus par role-dynamic-einspect.js -->
+	</body>
 
 </html>

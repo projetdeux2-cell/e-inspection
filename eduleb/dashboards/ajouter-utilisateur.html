@@ -7,7 +7,7 @@
     <link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
     <link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="../assets/fonts/themify-icons.css" rel="stylesheet">
-    <link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+    <link href="../assets/css/dashboard-einspect.css?v=20260730-admin-fix" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
@@ -151,7 +151,7 @@
         <!-- ===== SIDEBAR ===== -->
         <aside class="sidebar">
             <a class="brand" href="../index.html">
-                <img src="../assets/img/logo.png" alt="EducInspect">
+                <img src="../assets/img/logo1.png" alt="EducInspect">
                 <span>EducInspect</span>
             </a>
             <div class="profile">
@@ -235,8 +235,8 @@ Configuration live</strong>
                             <option value="">Sélectionner un rôle</option>
                             <option value="admin">Admin</option>
                             <option value="inspecteur">Inspecteur</option>
-                            <option value="directeur_departemental">Direction départementale</option>
-                            <option value="directeur_ecole">Direction d'école</option>
+                            <option value="directeur_departemental">Directeur départemental</option>
+                            <option value="directeur_ecole">Directeur d'école</option>
                             <option value="enseignant">Enseignant</option>
                         </select>
                     </div>
@@ -259,44 +259,6 @@ Configuration live</strong>
     <!-- ===== SCRIPTS ===== -->
     <script src="../assets/js/api-einspect.js"></script>
     <script src="../assets/js/role-guard-einspect.js"></script>
-    <!-- <script src="../assets/js/dashboard-einspect.js"></script>
-    <script src="../assets/js/role-dynamic-einspect.js"></script> -->
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('addUserForm');
-
-            form.addEventListener('submit', async function(event) {
-                event.preventDefault();
-
-                const formData = new FormData(form);
-                const data = {
-                    name: formData.get('fullName'),
-                    email: formData.get('email'),
-                    password: formData.get('password'),
-                    role: formData.get('role')
-                };
-
-                if (!data.name || !data.email || !data.password || !data.role) {
-                    alert('Veuillez remplir tous les champs obligatoires.');
-                    return;
-                }
-
-                if (data.password.length < 8) {
-                    alert('Le mot de passe doit contenir au moins 8 caractères.');
-                    return;
-                }
-
-                try {
-                    await window.EducInspectApi.createAdminUser(data);
-                    alert('✅ Utilisateur créé avec succès.');
-                    window.location.href = 'admin-utilisateurs.html';
-                } catch (error) {
-                    console.error(error);
-                    alert('Erreur : ' + error.message);
-                }
-            });
-        });
-    </script>
+    <script src="../assets/js/admin-resource-form.js"></script>
 </body>
 </html>

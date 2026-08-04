@@ -9,7 +9,12 @@ class InspectorController extends Controller
 {
     public function index()
     {
-        return Inspector::with('user')->latest()->paginate(20);
+        return Inspector::query()
+            ->with('user')
+            ->join('users', 'users.id', '=', 'inspectors.user_id')
+            ->orderBy('users.name')
+            ->select('inspectors.*')
+            ->paginate(20);
     }
 
     public function store(Request $request)

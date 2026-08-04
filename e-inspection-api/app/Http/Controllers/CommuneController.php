@@ -9,7 +9,7 @@ class CommuneController extends Controller
 {
     public function index()
     {
-        return Commune::with('department')->latest()->paginate(200);
+        return Commune::with('department')->orderBy('name')->get();
     }
 
     public function store(Request $request)

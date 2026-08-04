@@ -8,14 +8,20 @@
 	<link rel="icon" type="image/x-icon" href="../assets/img/favicon.png">
 	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 	<link href="../assets/fonts/themify-icons.css" rel="stylesheet">
-	<link href="../assets/css/dashboard-einspect.css" rel="stylesheet">
+	<link href="../assets/css/dashboard-einspect.css?v=20260730-admin-fix" rel="stylesheet">
 	<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+	<style>
+		.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;background:#2a6df4;color:#fff;font-weight:700;border-radius:10px;border:none;text-decoration:none;box-shadow:0 4px 12px rgba(42,109,244,0.18);} 
+		.btn-primary:hover{background:#1a5ad9;transform:translateY(-1px)}
+		@media(max-width:768px){.btn-primary{padding:8px 12px;font-size:14px}}
+	</style>
 </head>
 
 <body data-required-role="admin">
 	<div class="app-shell">
 		<aside class="sidebar">
-			<a class="brand" href="../index.html"><img src="../assets/img/logo.png"
+			<a class="brand" href="../index.html"><img src="../assets/img/logo1.png"
 					alt="EducInspect"><span>EducInspect</span></a>
 			<div class="profile">
 				<div class="avatar">AD</div>
@@ -48,20 +54,38 @@
 			<section class="dashboard-head">
 				<div>
 					<p class="eyebrow">Administration generale</p>
-					<h1>Parametres de plateforme</h1>
-					<p>Parametrez le comportement de la plateforme et les options de configuration admin.</p>
+					<h1>Parametres du compte</h1>
+					<p>Accédez à la gestion de votre profil administrateur et ajustez vos informations de compte.</p>
 				</div>
-				<!-- <div class="period"><span class="ti-settings"></span> <strong data-live-status>//
-						Configuration live</strong></div> -->
 			</section>
-			<section class="panel table-panel">
-				<div class="panel-head">
-					<h2>Parametres</h2><span class="legend">Configuration</span>
+			<section class="workspace-grid">
+				<div class="panel form-panel">
+					<div class="panel-head">
+						<h2>Mon profil</h2><span class="legend">Compte administrateur</span>
+					</div>
+					<div class="mission">
+						<strong>Informations du compte</strong>
+						<p>Votre profil est géré dans un parcours dédié, sans formulaire intégré dans cette section.</p>
+					</div>
+					<div class="form-actions">
+						<a class="btn-primary" href="admin-profile.html"><span class="ti-pencil"></span> Modifier mon profil</a>
+					</div>
 				</div>
-				<div class="resource-toolbar">
-					<div class="resource-search-box">
-						<span class="ti-search"></span>
-						<input type="search" placeholder="Rechercher dans les parametres...">
+				<div class="panel table-panel">
+					<div class="panel-head">
+						<h2>Actions disponibles</h2><span class="legend">Configuration</span>
+					</div>
+					<div class="mission">
+						<strong>Modifier mon profil</strong>
+						<p>Ouvrez la page de modification pour changer le nom, l'email et le mot de passe.</p>
+					</div>
+					<div class="mission">
+						<strong>Gerer les comptes</strong>
+						<p>Ajouter, modifier et supprimer les utilisateurs depuis l'espace gestion.</p>
+					</div>
+					<div class="mission">
+						<strong>Parametrer les referentiels</strong>
+						<p>Mettre à jour les departements, communes, ecoles et inspecteurs.</p>
 					</div>
 					<a class="resource-add-btn" href="modifier-profil.html">
 						<span class="ti-plus"></span>
@@ -119,10 +143,10 @@
 			</section>
 		</main>
 	</div>
-	<script src="../assets/js/api-einspect.js"></script>
-	<script src="../assets/js/role-guard-einspect.js"></script>
-	<script src="../assets/js/dashboard-einspect.js"></script>
-	<script src="../assets/js/role-dynamic-einspect.js"></script>
+	<script src="../assets/js/api-einspect.js?v=20260723-admin"></script>
+	<script src="../assets/js/role-guard-einspect.js?v=20260723-admin"></script>
+	<script src="../assets/js/dashboard-einspect.js?v=20260723-admin"></script>
+	<script src="../assets/js/role-dynamic-einspect.js?v=20260723-admin"></script>
 </body>
 
 </html>

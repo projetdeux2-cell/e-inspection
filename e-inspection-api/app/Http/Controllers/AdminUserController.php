@@ -13,7 +13,7 @@ class AdminUserController extends Controller
     {
         return User::query()
             ->with('roles:id,name')
-            ->latest()
+            ->orderBy('name')
             ->paginate(50);
     }
 
